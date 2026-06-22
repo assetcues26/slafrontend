@@ -172,7 +172,7 @@ a {
 
 .hero-video video {
   display: block;
-  width: clamp(110px, 14vw, 170px);
+  width: clamp(88px, 11.2vw, 136px);
   height: auto;
   object-fit: contain;
   mix-blend-mode: multiply;
@@ -1989,7 +1989,7 @@ a {
 /* Responsive */
 @media (max-height: 820px) {
   .hero-video video {
-    width: clamp(100px, 14vw, 160px);
+    width: clamp(80px, 11.2vw, 128px);
   }
 
   .landing-lead {
@@ -2005,7 +2005,7 @@ a {
 
 @media (max-height: 700px) {
   .hero-video video {
-    width: clamp(88px, 12vw, 130px);
+    width: clamp(70px, 9.6vw, 104px);
   }
 
   .landing-copy .landing-eyebrow,
@@ -2045,7 +2045,7 @@ a {
 
 @media (max-width: 640px) {
   .hero-video video {
-    width: min(150px, 42vw);
+    width: min(120px, 33.6vw);
   }
 }
 
