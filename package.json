@@ -1,0 +1,17 @@
+{
+  "name": "slafrontend",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm -w jira-sla-web run dev",
+    "build": "npm -w @jira-sla/shared run build && npm -w jira-sla-web run build",
+    "lint": "npm -ws run lint",
+    "start": "npm -w jira-sla-web run start"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
