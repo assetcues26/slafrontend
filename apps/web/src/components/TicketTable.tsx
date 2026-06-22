@@ -35,17 +35,28 @@ export default function TicketTable({ tickets, loading }: Props) {
   return (
     <div className="table-wrap">
       <table className="ticket-table">
+        <colgroup>
+          <col className="col-key" />
+          <col className="col-summary" />
+          <col className="col-status" />
+          <col className="col-team" />
+          <col className="col-priority" />
+          <col className="col-duration" />
+          <col className="col-due" />
+          <col className="col-sla" />
+          <col className="col-assignee" />
+        </colgroup>
         <thead>
           <tr>
-            <th>Key</th>
-            <th>Summary</th>
-            <th>Status</th>
-            <th>Team</th>
-            <th>Priority</th>
-            <th>Duration</th>
-            <th>Due date</th>
-            <th>SLA</th>
-            <th>Assignee</th>
+            <th className="col-key">Key</th>
+            <th className="col-summary">Summary</th>
+            <th className="col-status">Status</th>
+            <th className="col-team">Team</th>
+            <th className="col-priority">Priority</th>
+            <th className="col-duration">Duration</th>
+            <th className="col-due">Due date</th>
+            <th className="col-sla">SLA</th>
+            <th className="col-assignee">Assignee</th>
           </tr>
         </thead>
         <tbody>
@@ -53,7 +64,7 @@ export default function TicketTable({ tickets, loading }: Props) {
             const badge = slaBadge(ticket);
             return (
               <tr key={ticket.ticket_key} className={badge.className === 'badge-breach' ? 'row-breach' : ''}>
-                <td>
+                <td className="col-key cell-compact">
                   <div className="key-cell">
                     <Link href={`/dashboard/tickets/${ticket.ticket_key}`} className="key-link">
                       {ticket.ticket_key}
@@ -72,11 +83,11 @@ export default function TicketTable({ tickets, loading }: Props) {
                     ) : null}
                   </div>
                 </td>
-                <td className="cell-summary">{ticket.summary}</td>
-                <td>{ticket.current_status}</td>
-                <td>{ticket.status_team || '—'}</td>
-                <td><span className={prioClass(ticket.priority)}>{ticket.priority || '—'}</span></td>
-                <td>
+                <td className="col-summary cell-summary">{ticket.summary}</td>
+                <td className="col-status">{ticket.current_status}</td>
+                <td className="col-team">{ticket.status_team || '—'}</td>
+                <td className="col-priority"><span className={prioClass(ticket.priority)}>{ticket.priority || '—'}</span></td>
+                <td className="col-duration cell-compact">
                   {ticket.current_status_duration != null
                     ? `${ticket.current_status_duration}m`
                     : '—'}
@@ -84,11 +95,11 @@ export default function TicketTable({ tickets, loading }: Props) {
                     <span className="muted"> / {ticket.current_status_sla_threshold}m</span>
                   )}
                 </td>
-                <td>{ticket.due_date_missing ? 'Missing' : ticket.due_date || '—'}</td>
-                <td>
+                <td className="col-due cell-compact">{ticket.due_date_missing ? 'Missing' : ticket.due_date || '—'}</td>
+                <td className="col-sla">
                   <span className={`badge ${badge.className}`}>{badge.label}</span>
                 </td>
-                <td>{ticket.assignee || 'Unassigned'}</td>
+                <td className="col-assignee">{ticket.assignee || 'Unassigned'}</td>
               </tr>
             );
           })}

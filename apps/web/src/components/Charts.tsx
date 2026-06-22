@@ -144,7 +144,7 @@ export function BarCard({
           <BarChart
             data={data}
             layout="vertical"
-            margin={{ top: 4, right: 28, left: 4, bottom: 4 }}
+            margin={{ top: 4, right: 16, left: 0, bottom: 4 }}
             barCategoryGap="18%"
           >
             <CartesianGrid horizontal={false} stroke="#f1f5f9" strokeWidth={1} />
@@ -158,7 +158,7 @@ export function BarCard({
             <YAxis
               type="category"
               dataKey="name"
-              width={168}
+              width={140}
               tick={{ fontSize: 11, fill: '#475569', fontWeight: 500 }}
               tickLine={false}
               axisLine={false}
