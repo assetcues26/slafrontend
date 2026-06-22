@@ -8,17 +8,20 @@ export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const complete = async () => {
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
         router.replace('/dashboard');
-      } else {
-        router.replace('/');
+        return;
       }
-    });
+      router.replace('/?signed_in=0');
+    };
+
+    complete();
   }, [router]);
 
   return (
-    <main className="page" style={{ paddingTop: 120, textAlign: 'center' }}>
+    <main className="landing landing-callback">
       <p>Completing sign in…</p>
     </main>
   );

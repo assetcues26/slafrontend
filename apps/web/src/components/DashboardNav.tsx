@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import AuthPanel from './AuthPanel';
+import { useAuthSession } from '../hooks/useAuthSession';
 
 const links = [
   { href: '/dashboard', label: 'Overview' },
@@ -12,12 +12,13 @@ const links = [
 
 export default function DashboardNav() {
   const pathname = usePathname();
+  const { session, loading, signOut } = useAuthSession();
 
   return (
     <header className="dash-nav">
       <div className="dash-nav-inner">
         <div className="dash-brand">
-          <Link href="/">Jira SLA</Link>
+          <Link href="/">Assetcues Support</Link>
         </div>
         <nav className="dash-links">
           {links.map((link) => (
@@ -30,7 +31,22 @@ export default function DashboardNav() {
             </Link>
           ))}
         </nav>
-        <AuthPanel />
+        <div className="dash-user">
+          {loading ? (
+            <span className="muted">Loading…</span>
+          ) : session ? (
+            <>
+              <span className="dash-user-email">{session.user.email}</span>
+              <button className="ghost" type="button" onClick={signOut}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link href="/login" className="ghost">
+              Sign in
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

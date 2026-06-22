@@ -1,64 +1,74 @@
-import Link from 'next/link';
-import { slaConfig } from '@jira-sla/shared';
 import AuthPanel from '../components/AuthPanel';
 
-const mainStatuses = slaConfig.filter((row) => row.main_status).slice(0, 6);
-
-const formatTiming = (value?: number | string) => {
-  if (!value) return 'N/A';
-  if (typeof value === 'string') return value;
-  return `${value}m`;
-};
+const features = [
+  {
+    title: 'SLA Tracking',
+    description: 'Automatic deadline enforcement with business-hour calculations.',
+  },
+  {
+    title: 'Real-time Alerts',
+    description: 'Instant breach notifications and missing due-date detection.',
+  },
+  {
+    title: 'Analytics',
+    description: 'SLA compliance dashboards and breach monitoring.',
+  },
+];
 
 export default function HomePage() {
   return (
-    <main className="page">
-      <section className="hero">
-        <div className="hero-text">
-          <p className="eyebrow">Support Operations</p>
-          <h1>Live SLA clarity for every status transition.</h1>
-          <p className="lead">
-            Track main, sub, and final statuses with priority-aware SLAs. Sign in to view the
-            live dashboard with breaches, missing due dates, and full ticket history.
-          </p>
-          <div className="hero-actions">
-            <Link href="/dashboard" className="primary">
-              Open Dashboard
-            </Link>
-            <Link href="/dashboard/breaches" className="ghost">
-              SLA Breaches
-            </Link>
+    <div className="landing">
+      <header className="landing-nav">
+        <div className="landing-brand">
+          <span className="landing-logo">AC</span>
+          <div>
+            <strong>Assetcues Support</strong>
+            <span>Customer Ticket Management</span>
           </div>
         </div>
-        <div className="hero-panel">
-          <AuthPanel />
-          <p className="panel-hint">
-            Use Google or email magic link. Data syncs from Jira every 10 minutes via n8n.
-          </p>
-        </div>
-      </section>
+        <span className="landing-badge">Enterprise-grade support management</span>
+      </header>
 
-      <section className="status-grid">
-        <div className="section-title">
-          <h2>Status timing map</h2>
-          <p>Priority-aware SLAs normalized to minutes, ready for escalation.</p>
-        </div>
-        <div className="cards">
-          {mainStatuses.map((row) => (
-            <div key={row.main_status as string} className="status-card">
-              <div>
-                <p className="status-title">{row.main_status}</p>
-                <p className="status-sub">Main workflow</p>
-              </div>
-              <div className="status-metrics">
-                <span>Highest: {formatTiming(row.timings.Highest)}</span>
-                <span>High: {formatTiming(row.timings.High)}</span>
-                <span>Medium: {formatTiming(row.timings.Medium)}</span>
-              </div>
+      <main className="landing-main">
+        <section className="landing-copy">
+          <p className="landing-eyebrow">Internal Portal</p>
+          <h1>Resolve issues faster with SLA-driven workflows</h1>
+          <p className="landing-lead">
+            Track, triage, and resolve support tickets with built-in SLA monitoring, real-time
+            alerts, and team collaboration.
+          </p>
+
+          <div className="portal-cards">
+            <div className="portal-card portal-card-muted">
+              <p className="portal-label">Customer Portal</p>
+              <h3>Submit &amp; track support tickets</h3>
+              <span className="portal-note">Coming soon</span>
             </div>
-          ))}
-        </div>
-      </section>
-    </main>
+            <div className="portal-card portal-card-active">
+              <p className="portal-label">Internal Portal</p>
+              <h3>Team management console</h3>
+              <span className="portal-note">Sign in to access dashboard</span>
+            </div>
+          </div>
+
+          <div className="feature-grid">
+            {features.map((feature) => (
+              <article key={feature.title} className="feature-card">
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="landing-auth">
+          <AuthPanel />
+        </section>
+      </main>
+
+      <footer className="landing-footer">
+        © 2026 Assetcues Solution Pvt. Ltd. · Customer Support Ticket Management
+      </footer>
+    </div>
   );
 }

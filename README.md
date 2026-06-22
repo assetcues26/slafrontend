@@ -1,6 +1,8 @@
 # SLA Frontend
 
-Next.js dashboard for Jira SLA tracking — live ticket board, breach alerts, and Supabase auth.
+Next.js dashboard for Assetcues Support — SLA tracking, breach alerts, and Supabase auth (email/password + OTP signup, Google).
+
+**Frontend only.** The backend API lives in a separate repo: https://github.com/assetcues26/slabackenmd
 
 ## Local development
 
@@ -34,10 +36,19 @@ cp apps/web/.env.example apps/web/.env.local
    - `https://your-app.vercel.app/auth/callback`
    - `http://localhost:3000/auth/callback`
 
+## Auth (Supabase)
+
+- **Sign up:** full name, username, email, password → email OTP verification
+- **Sign in:** email + password or Google OAuth
+- User profiles are stored in Supabase `profiles` table (username, full name, email)
+
+Enable **Email** provider in Supabase → Authentication → Providers. Confirm email / OTP must be enabled for signup verification.
+
 ## Routes
 
-- `/` — Landing + sign in
+- `/` — Landing + sign in / sign up
+- `/login` — Same auth page
 - `/dashboard` — SLA overview
 - `/dashboard/tickets` — All tickets
 - `/dashboard/breaches` — SLA breaches
-- `/auth/callback` — OAuth callback
+- `/auth/callback` — OAuth / email confirmation callback

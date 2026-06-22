@@ -8,8 +8,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata = {
-  title: 'Jira SLA Platform',
-  description: 'Operational SLA visibility for support workflows.',
+  title: 'Assetcues Support | Customer Ticket Management',
+  description: 'Enterprise-grade support management with SLA-driven workflows.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
