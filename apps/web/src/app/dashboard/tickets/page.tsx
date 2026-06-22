@@ -55,6 +55,16 @@ function TicketsContent() {
   const [team, setTeam] = useState('');
   const [priority, setPriority] = useState('');
   const [missingOnly, setMissingOnly] = useState(false);
+  const [dueDateFilter, setDueDateFilter] = useState('');
+
+  const normalizeDueDate = (value: string | null | undefined) => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed || trimmed.toLowerCase() === 'missing' || trimmed.toLowerCase() === 'no due date') {
+      return null;
+    }
+    return trimmed.slice(0, 10);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -96,13 +106,14 @@ function TicketsContent() {
       if (team && t.status_team !== team) return false;
       if (priority && t.priority !== priority) return false;
       if (missingOnly && !t.due_date_missing) return false;
+      if (dueDateFilter && normalizeDueDate(t.due_date) !== dueDateFilter) return false;
       if (q) {
         const hay = `${t.ticket_key} ${t.summary ?? ''} ${t.assignee ?? ''} ${t.reporter ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [items, search, slaFilter, status, team, priority, missingOnly]);
+  }, [items, search, slaFilter, status, team, priority, missingOnly, dueDateFilter]);
 
   return (
     <main className="dash-main">
@@ -150,6 +161,27 @@ function TicketsContent() {
             </option>
           ))}
         </select>
+        <div className="filter-date-wrap">
+          <input
+            type="date"
+            className="filter-date"
+            value={dueDateFilter}
+            onChange={(e) => setDueDateFilter(e.target.value)}
+            aria-label="Filter by due date"
+            title="Filter by due date"
+          />
+          {dueDateFilter ? (
+            <button
+              type="button"
+              className="filter-date-clear"
+              onClick={() => setDueDateFilter('')}
+              aria-label="Clear due date filter"
+              title="Clear date"
+            >
+              ×
+            </button>
+          ) : null}
+        </div>
         <label className="filter-check">
           <input
             type="checkbox"

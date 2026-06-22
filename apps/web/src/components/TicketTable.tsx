@@ -83,7 +83,11 @@ export default function TicketTable({ tickets, loading }: Props) {
                     ) : null}
                   </div>
                 </td>
-                <td className="col-summary cell-summary">{ticket.summary}</td>
+                <td className="col-summary">
+                  <span className="cell-summary" title={ticket.summary ?? undefined}>
+                    {ticket.summary || '—'}
+                  </span>
+                </td>
                 <td className="col-status">{ticket.current_status}</td>
                 <td className="col-team">{ticket.status_team || '—'}</td>
                 <td className="col-priority"><span className={prioClass(ticket.priority)}>{ticket.priority || '—'}</span></td>
