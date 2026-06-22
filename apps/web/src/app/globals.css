@@ -80,12 +80,11 @@ a {
    AUTH / LANDING
    ============================================================ */
 .landing {
-  height: 100dvh;
   min-height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
+  height: 100dvh;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   background:
     radial-gradient(1100px 560px at 0% -10%, rgba(99, 102, 241, 0.12), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(6, 182, 212, 0.10), transparent 50%),
@@ -163,7 +162,7 @@ a {
 }
 
 .hero-video {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   background: transparent;
   overflow: hidden;
   display: flex;
@@ -172,9 +171,9 @@ a {
 
 .hero-video video {
   display: block;
-  width: 75%;
+  width: min(75%, 320px);
   height: auto;
-  max-height: 255px;
+  max-height: min(255px, 28vh);
   object-fit: contain;
   mix-blend-mode: multiply;
   clip-path: inset(10px 0 10px 0);
@@ -194,9 +193,9 @@ a {
 .landing-main {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
-  gap: clamp(24px, 4vw, 56px);
+  gap: clamp(16px, 3vw, 40px);
   align-items: center;
-  padding: clamp(12px, 2.5vh, 28px) clamp(20px, 4vw, 48px);
+  padding: clamp(8px, 1.5vh, 20px) clamp(20px, 4vw, 48px);
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
@@ -215,8 +214,8 @@ a {
 }
 
 .landing-copy h1 {
-  margin: 0 0 12px;
-  font-size: clamp(1.85rem, 3.2vw, 2.75rem);
+  margin: 0 0 10px;
+  font-size: clamp(1.65rem, 2.8vw, 2.5rem);
   line-height: 1.08;
   letter-spacing: -0.025em;
   background: linear-gradient(135deg, #1e293b 30%, #4f46e5);
@@ -311,10 +310,9 @@ a {
 
 .landing-auth {
   align-self: center;
-}
-
-.landing-footer {
-  display: none;
+  min-height: 0;
+  max-height: 100%;
+  width: 100%;
 }
 
 /* Auth card */
@@ -322,11 +320,27 @@ a {
   background: var(--surface);
   color: var(--ink);
   border-radius: var(--radius-lg);
-  padding: 30px;
+  padding: clamp(16px, 2vh, 24px);
   box-shadow: var(--shadow-lg);
   display: grid;
-  gap: 18px;
+  gap: clamp(10px, 1.4vh, 14px);
   border: 1px solid var(--border);
+  max-height: calc(100dvh - 76px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.35) transparent;
+}
+
+.auth-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-card::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 999px;
 }
 
 .auth-brand {
@@ -341,8 +355,8 @@ a {
 }
 
 .auth-card-header h2 {
-  margin: 0 0 8px;
-  font-size: 1.55rem;
+  margin: 0 0 6px;
+  font-size: clamp(1.25rem, 2vh, 1.45rem);
   letter-spacing: -0.02em;
 }
 
@@ -350,8 +364,8 @@ a {
 .auth-subtitle {
   margin: 0;
   color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.55;
+  font-size: clamp(0.82rem, 1.4vh, 0.9rem);
+  line-height: 1.45;
 }
 
 .auth-tabs {
@@ -365,12 +379,12 @@ a {
 }
 
 .auth-tab {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   transition: all 0.15s ease;
 }
 
@@ -382,12 +396,12 @@ a {
 
 .auth-form {
   display: grid;
-  gap: 14px;
+  gap: clamp(8px, 1.2vh, 11px);
 }
 
 .auth-field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .auth-field span {
@@ -398,7 +412,7 @@ a {
 
 .auth-field input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
   background: var(--surface-2);
@@ -1911,13 +1925,57 @@ a {
 }
 
 /* Responsive */
+@media (max-height: 820px) {
+  .hero-video video {
+    max-height: 130px;
+    width: min(58%, 220px);
+  }
+
+  .landing-lead {
+    font-size: 0.88rem;
+  }
+
+  .auth-primary,
+  .auth-secondary,
+  .auth-google {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-height: 700px) {
+  .hero-video {
+    display: none;
+  }
+
+  .landing-eyebrow,
+  .auth-eyebrow {
+    margin-bottom: 8px;
+  }
+}
+
 @media (max-width: 960px) {
+  .landing {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
   .landing-main {
     grid-template-columns: 1fr;
+    overflow: visible;
+    align-items: stretch;
   }
+
   .landing-auth {
     position: static;
+    max-height: none;
   }
+
+  .auth-card {
+    max-height: none;
+    overflow-y: visible;
+  }
+
   .landing-nav {
     flex-direction: column;
     align-items: flex-start;
