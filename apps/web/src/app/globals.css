@@ -81,10 +81,10 @@ a {
   display: grid;
   grid-template-rows: auto 1fr auto;
   background:
-    radial-gradient(1200px 600px at 0% -10%, rgba(99, 102, 241, 0.20), transparent 50%),
-    radial-gradient(900px 500px at 100% 0%, rgba(14, 165, 233, 0.14), transparent 45%),
-    linear-gradient(180deg, #0b1020 0%, #0f1630 55%, #131a36 100%);
-  color: #e8ecf6;
+    radial-gradient(1100px 560px at 0% -10%, rgba(99, 102, 241, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(6, 182, 212, 0.10), transparent 50%),
+    linear-gradient(180deg, #fbfcff 0%, #eef1fb 100%);
+  color: var(--ink);
 }
 
 .landing-callback {
@@ -98,7 +98,7 @@ a {
   justify-content: space-between;
   gap: 24px;
   padding: 22px clamp(20px, 5vw, 64px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  border-bottom: 1px solid var(--border);
 }
 
 .landing-brand {
@@ -135,10 +135,6 @@ a {
 .landing-logo-pill {
   display: inline-flex;
   align-items: center;
-  background: #ffffff;
-  padding: 9px 16px;
-  border-radius: 12px;
-  box-shadow: 0 8px 22px rgba(8, 12, 30, 0.35);
 }
 
 .landing-logo-pill img {
@@ -150,43 +146,40 @@ a {
 .landing-brand-tag {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--muted-light);
+  color: var(--muted);
   letter-spacing: 0.01em;
-  padding-left: 4px;
-  border-left: 1px solid rgba(148, 163, 184, 0.3);
-  margin-left: 4px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-strong);
+  margin-left: 8px;
   padding-top: 2px;
   padding-bottom: 2px;
 }
 
 .hero-video {
-  margin: 32px 0;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  background:
-    radial-gradient(120% 120% at 50% 0%, rgba(99, 102, 241, 0.12), transparent 60%),
-    #ffffff;
-  box-shadow: var(--shadow-lg);
+  margin: 24px 0;
+  background: transparent;
 }
 
 .hero-video video {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 320px;
+  max-height: 340px;
   object-fit: contain;
+  /* The animation ships on a white background; multiply blends white into the
+     light page so only the colored logo elements remain visible. */
+  mix-blend-mode: multiply;
 }
 
 .landing-badge {
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c7d2fe;
+  color: var(--brand-700);
   padding: 9px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--brand-100);
+  background: var(--brand-50);
 }
 
 .landing-main {
@@ -206,7 +199,7 @@ a {
   letter-spacing: 0.18em;
   font-size: 0.72rem;
   font-weight: 600;
-  color: #818cf8;
+  color: var(--brand-600);
   margin: 0 0 14px;
 }
 
@@ -215,7 +208,7 @@ a {
   font-size: clamp(2.3rem, 4.2vw, 3.7rem);
   line-height: 1.05;
   letter-spacing: -0.025em;
-  background: linear-gradient(180deg, #ffffff, #c7d2fe);
+  background: linear-gradient(135deg, #1e293b 30%, #4f46e5);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -224,7 +217,7 @@ a {
 
 .landing-lead {
   margin: 0;
-  color: #aeb8cf;
+  color: var(--muted);
   font-size: 1.06rem;
   line-height: 1.7;
   max-width: 54ch;
@@ -287,8 +280,9 @@ a {
 .feature-card {
   padding: 18px;
   border-radius: var(--radius);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card h3 {
@@ -299,7 +293,7 @@ a {
 
 .feature-card p {
   margin: 0;
-  color: var(--muted-light);
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.6;
 }
@@ -318,7 +312,7 @@ a {
   box-shadow: var(--shadow-lg);
   display: grid;
   gap: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
 }
 
 .auth-brand {
@@ -531,8 +525,8 @@ a {
 
 .landing-footer {
   padding: 22px clamp(20px, 5vw, 64px) 30px;
-  border-top: 1px solid rgba(148, 163, 184, 0.16);
-  color: var(--muted-light);
+  border-top: 1px solid var(--border);
+  color: var(--muted);
   font-size: 0.84rem;
   text-align: center;
 }
