@@ -93,6 +93,7 @@ export type DashboardStats = {
   byCategory: Record<string, number>;
   byIssueType: Record<string, number>;
   byProject: Record<string, number>;
+  allTeams: string[];
   slaByPhase: {
     todo: PhaseSla;
     inprogress: PhaseSla;

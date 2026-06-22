@@ -158,6 +158,7 @@ a {
 .hero-video {
   margin: 24px 0;
   background: transparent;
+  overflow: hidden;
 }
 
 .hero-video video {
@@ -169,6 +170,8 @@ a {
   /* The animation ships on a white background; multiply blends white into the
      light page so only the colored logo elements remain visible. */
   mix-blend-mode: multiply;
+  /* Trim the faint encoder lines baked into the top/bottom edges of the clip. */
+  clip-path: inset(10px 0 10px 0);
 }
 
 .landing-badge {
@@ -1425,6 +1428,150 @@ a {
   line-height: 1.7;
   font-size: 0.94rem;
   white-space: pre-wrap;
+}
+
+/* Current status SLA progress */
+.sla-progress {
+  margin-top: 4px;
+}
+
+.sla-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.sla-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #34d399, #10b981);
+  transition: width 0.4s ease;
+}
+
+.sla-progress-fill.is-breached {
+  background: linear-gradient(90deg, #f87171, #dc2626);
+}
+
+.sla-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.sla-progress-meta strong {
+  color: var(--ink);
+}
+
+/* SLA escalation flags */
+.sla-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.flag-on {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success-border);
+}
+
+.phase-dot.dot-red {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px var(--danger-bg);
+}
+
+.phase-dot.dot-green {
+  background: var(--success);
+  box-shadow: 0 0 0 4px var(--success-bg);
+}
+
+.history-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* Filters / toolbar */
+.filters-row {
+  align-items: center;
+}
+
+.filters-row select,
+.filters-row input {
+  height: 42px;
+}
+
+.filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  font-weight: 500;
+  padding: 0 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-check input {
+  width: 16px;
+  height: 16px;
+  min-width: 0;
+  accent-color: var(--brand-600);
+}
+
+.filter-spacer {
+  flex: 1;
+}
+
+.filter-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 16px;
+  height: 42px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: all 0.15s ease;
+}
+
+.btn-export:hover {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  border-color: var(--brand-200);
 }
 
 /* Lifecycle timeline */

@@ -47,41 +47,81 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function PhaseRow({
+const isYes = (value?: string | null) => (value || '').toUpperCase() === 'YES';
+
+function SlaPhase({
   name,
-  start,
-  end,
-  duration,
   sla,
   commented,
   emailed,
 }: {
   name: string;
-  start?: string | null;
-  end?: string | null;
-  duration?: number | null;
   sla?: string | null;
   commented?: string | null;
   emailed?: string | null;
 }) {
-  const reached = Boolean(start);
+  const hasData = sla != null && sla !== '';
+  const breached = isYes(sla);
+  const dotClass = hasData ? (breached ? 'dot-red' : 'dot-green') : '';
   return (
-    <div className={`phase-row ${reached ? '' : 'phase-row-pending'}`}>
+    <div className={`phase-row ${hasData ? '' : 'phase-row-pending'}`}>
       <div className="phase-marker">
-        <span className="phase-dot" />
+        <span className={`phase-dot ${dotClass}`} />
       </div>
       <div className="phase-content">
         <div className="phase-head">
           <h4>{name}</h4>
-          {sla ? slaPill(sla) : null}
+          {hasData ? (
+            <span className={`badge ${breached ? 'badge-breach' : 'badge-ok'}`}>
+              {breached ? 'SLA breached' : 'On track'}
+            </span>
+          ) : (
+            <span className="muted">No SLA data</span>
+          )}
         </div>
-        <div className="phase-meta">
-          <span><strong>Start:</strong> {fmtDate(start)}</span>
-          {end !== undefined ? <span><strong>End:</strong> {fmtDate(end)}</span> : null}
-          <span><strong>Duration:</strong> {fmtDuration(duration)}</span>
-          {commented ? <span><strong>Commented:</strong> {commented}</span> : null}
-          {emailed ? <span><strong>Emailed:</strong> {emailed}</span> : null}
-        </div>
+        {hasData ? (
+          <div className="sla-flags">
+            <span className={`flag ${isYes(commented) ? 'flag-on' : ''}`}>
+              {isYes(commented) ? '✓ Breach comment posted' : 'No breach comment'}
+            </span>
+            <span className={`flag ${isYes(emailed) ? 'flag-on' : ''}`}>
+              {isYes(emailed) ? '✓ Breach email sent' : 'No breach email'}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({
+  duration,
+  threshold,
+  breached,
+}: {
+  duration?: number | null;
+  threshold?: number | null;
+  breached: boolean;
+}) {
+  const hasThreshold = threshold != null && threshold > 0;
+  const pct = hasThreshold
+    ? Math.min(Math.round(((duration ?? 0) / threshold) * 100), 100)
+    : breached
+      ? 100
+      : 10;
+  return (
+    <div className="sla-progress">
+      <div className="sla-progress-track">
+        <div
+          className={`sla-progress-fill ${breached ? 'is-breached' : ''}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="sla-progress-meta">
+        <span>
+          <strong>{fmtDuration(duration)}</strong> in status
+        </span>
+        <span>{hasThreshold ? `Threshold ${fmtDuration(threshold)}` : 'No threshold set'}</span>
       </div>
     </div>
   );
@@ -187,49 +227,74 @@ export default function TicketDetailPage() {
                 <div className="detail-fields">
                   <Field label="Created" value={fmtDate(ticket.created)} />
                   <Field label="Updated" value={fmtDate(ticket.updated)} />
-                  <Field label="Due date" value={ticket.due_date || (ticket.due_date_missing ? 'Missing' : '—')} />
-                  <Field label="Current status since" value={fmtDate(ticket.current_status_start)} />
+                  <Field
+                    label="Due date"
+                    value={
+                      ticket.due_date && ticket.due_date !== 'No Due Date'
+                        ? ticket.due_date
+                        : ticket.due_date_missing
+                          ? 'Missing'
+                          : 'Not set'
+                    }
+                  />
+                  <Field label="In current status since" value={fmtDate(ticket.current_status_start)} />
                 </div>
               </div>
 
               <div className="dash-section">
-                <h2>Current SLA</h2>
+                <h2>Current status SLA</h2>
                 <div className="detail-fields">
                   <Field label="Status" value={ticket.current_status} />
-                  <Field label="Time in status" value={fmtDuration(ticket.current_status_duration)} />
-                  <Field label="Threshold" value={fmtDuration(ticket.current_status_sla_threshold)} />
                   <Field label="SLA state" value={slaPill(ticket.current_status_sla)} />
                 </div>
+                <ProgressBar
+                  duration={ticket.current_status_duration}
+                  threshold={ticket.current_status_sla_threshold}
+                  breached={isYes(ticket.current_status_sla)}
+                />
               </div>
             </div>
 
             <section className="dash-section">
-              <h2>Lifecycle timeline</h2>
+              <h2>SLA escalation journey</h2>
+              <p className="muted">
+                Per-phase SLA outcome and whether breach escalations (comment / email) were triggered.
+              </p>
               <div className="phase-timeline">
-                <PhaseRow
+                <SlaPhase
                   name="To Do"
-                  start={ticket.todo_start}
-                  end={ticket.todo_end}
-                  duration={ticket['todo_duration (min)']}
                   sla={ticket.todo_sla}
                   commented={ticket.todo_sla_commented}
                   emailed={ticket.todo_sla_emailed}
                 />
-                <PhaseRow
+                <SlaPhase
                   name="In Progress"
-                  start={ticket.inprogress_start}
-                  end={ticket.inprogress_end}
-                  duration={ticket['inprogress_duration (min)']}
                   sla={ticket.inprogress_sla}
                   commented={ticket.inprogress_sla_commented}
                   emailed={ticket.inprogress_sla_emailed}
                 />
-                <PhaseRow
-                  name="Done"
-                  start={ticket.done_start}
-                  end={undefined}
-                  duration={ticket['done_duration (min)']}
-                />
+                <div className="phase-row">
+                  <div className="phase-marker">
+                    <span className={`phase-dot ${isYes(ticket.current_status_sla) ? 'dot-red' : 'dot-green'}`} />
+                  </div>
+                  <div className="phase-content">
+                    <div className="phase-head">
+                      <h4>Current · {ticket.current_status || 'Unknown'}</h4>
+                      {slaPill(ticket.current_status_sla)}
+                    </div>
+                    <div className="phase-meta">
+                      <span>
+                        <strong>{fmtDuration(ticket.current_status_duration)}</strong> in status
+                      </span>
+                      <span>
+                        <strong>Threshold:</strong>{' '}
+                        {ticket.current_status_sla_threshold
+                          ? fmtDuration(ticket.current_status_sla_threshold)
+                          : 'none'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -246,7 +311,10 @@ export default function TicketDetailPage() {
                 <span className="muted">{history.length} change{history.length === 1 ? '' : 's'}</span>
               </div>
               {history.length === 0 ? (
-                <div className="table-empty">No status changes recorded.</div>
+                <div className="history-empty">
+                  No status transitions recorded yet. History appears here once the sync pipeline
+                  logs status changes for this ticket.
+                </div>
               ) : (
                 <div className="table-wrap">
                   <table className="ticket-table">
