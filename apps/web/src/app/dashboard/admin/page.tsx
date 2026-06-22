@@ -26,7 +26,6 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState<Record<string, boolean>>({});
-  const [resetResult, setResetResult] = useState<{ email: string; link: string | null } | null>(null);
   const [notice, setNotice] = useState('');
 
   const setRowBusy = (id: string, value: boolean) =>
@@ -124,25 +123,16 @@ export default function AdminPage() {
     setNotice('');
     try {
       const token = await getAccessToken();
-      const result = await fetchJson<{ email: string; link: string | null }>(
+      const result = await fetchJson<{ email: string; reset: boolean }>(
         `/admin/users/${user.id}/reset`,
         token,
-        { method: 'POST' },
+        { method: 'POST', body: JSON.stringify({}) },
       );
-      setResetResult(result);
+      setNotice(`Password reset to default for ${result.email}.`);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setRowBusy(user.id, false);
-    }
-  };
-
-  const copyLink = async (link: string) => {
-    try {
-      await navigator.clipboard.writeText(link);
-      setNotice('Reset link copied to clipboard.');
-    } catch {
-      setNotice('Could not copy automatically — select and copy the link manually.');
     }
   };
 
@@ -183,29 +173,6 @@ export default function AdminPage() {
 
         {error ? <div className="alert alert-error">{error}</div> : null}
         {notice ? <div className="alert alert-breach">{notice}</div> : null}
-
-        {resetResult ? (
-          <div className="reset-banner">
-            <div>
-              <strong>Password reset link for {resetResult.email}</strong>
-              {resetResult.link ? (
-                <p className="reset-link">{resetResult.link}</p>
-              ) : (
-                <p>No link returned — check that the service role key is configured.</p>
-              )}
-            </div>
-            <div className="reset-actions">
-              {resetResult.link ? (
-                <button type="button" className="primary" onClick={() => copyLink(resetResult.link!)}>
-                  Copy link
-                </button>
-              ) : null}
-              <button type="button" className="ghost" onClick={() => setResetResult(null)}>
-                Dismiss
-              </button>
-            </div>
-          </div>
-        ) : null}
 
         <div className="table-wrap">
           <table className="ticket-table">
@@ -272,7 +239,7 @@ export default function AdminPage() {
                           disabled={rowBusy}
                           onClick={() => sendReset(user)}
                         >
-                          Reset link
+                          Reset password
                         </button>
                         <button
                           type="button"

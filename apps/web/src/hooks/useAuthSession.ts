@@ -38,7 +38,23 @@ export function useAuthSession() {
     });
   };
 
-  const signInWithPassword = async (email: string, password: string) => {
+  const signInWithPassword = async (login: string, password: string) => {
+    const trimmed = login.trim();
+    let email = trimmed;
+    if (!trimmed.includes('@')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/v1';
+      const response = await fetch(`${apiBase}/auth/resolve-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login: trimmed }),
+      });
+      if (!response.ok) {
+        const body = await response.text().catch(() => '');
+        return { data: { session: null, user: null }, error: { message: body || 'Invalid username' } };
+      }
+      const resolved = (await response.json()) as { email: string };
+      email = resolved.email;
+    }
     return supabase.auth.signInWithPassword({ email, password });
   };
 

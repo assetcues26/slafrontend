@@ -176,39 +176,14 @@ export default function AuthPanel() {
         </p>
       </div>
 
-      {mode !== 'confirm' ? (
-        <div className="auth-tabs">
-          <button
-            type="button"
-            className={mode === 'signin' ? 'auth-tab active' : 'auth-tab'}
-            onClick={() => {
-              setMode('signin');
-              resetMessages();
-            }}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            className={mode === 'signup' ? 'auth-tab active' : 'auth-tab'}
-            onClick={() => {
-              setMode('signup');
-              resetMessages();
-            }}
-          >
-            Sign up
-          </button>
-        </div>
-      ) : null}
-
       {mode === 'signin' ? (
         <form className="auth-form" onSubmit={handleSignIn}>
           <label className="auth-field">
-            <span>Email</span>
+            <span>Username</span>
             <input
-              type="email"
-              autoComplete="email"
-              placeholder="you@company.com"
+              type="text"
+              autoComplete="username"
+              placeholder="tejasjagdale"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -231,7 +206,7 @@ export default function AuthPanel() {
         </form>
       ) : null}
 
-      {mode === 'signup' ? (
+      {false && mode === 'signup' ? (
         <form className="auth-form" onSubmit={handleSignUp}>
           <label className="auth-field">
             <span>Full name</span>
@@ -343,7 +318,7 @@ export default function AuthPanel() {
         </div>
       ) : null}
 
-      {mode !== 'confirm' ? (
+      {false && mode !== 'confirm' ? (
         <>
           <div className="auth-divider">
             <span>or</span>

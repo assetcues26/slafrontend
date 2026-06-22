@@ -80,9 +80,12 @@ a {
    AUTH / LANDING
    ============================================================ */
 .landing {
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   background:
     radial-gradient(1100px 560px at 0% -10%, rgba(99, 102, 241, 0.12), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(6, 182, 212, 0.10), transparent 50%),
@@ -100,8 +103,9 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 22px clamp(20px, 5vw, 64px);
+  padding: 14px clamp(20px, 4vw, 48px);
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .landing-brand {
@@ -159,21 +163,20 @@ a {
 }
 
 .hero-video {
-  margin: 24px 0;
+  margin: 8px 0 0;
   background: transparent;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
 }
 
 .hero-video video {
   display: block;
-  width: 100%;
+  width: 75%;
   height: auto;
-  max-height: 340px;
+  max-height: 255px;
   object-fit: contain;
-  /* The animation ships on a white background; multiply blends white into the
-     light page so only the colored logo elements remain visible. */
   mix-blend-mode: multiply;
-  /* Trim the faint encoder lines baked into the top/bottom edges of the clip. */
   clip-path: inset(10px 0 10px 0);
 }
 
@@ -190,13 +193,15 @@ a {
 
 .landing-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 440px);
-  gap: clamp(32px, 5vw, 80px);
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px);
+  gap: clamp(24px, 4vw, 56px);
   align-items: center;
-  padding: clamp(36px, 6vw, 88px) clamp(20px, 5vw, 64px);
+  padding: clamp(12px, 2.5vh, 28px) clamp(20px, 4vw, 48px);
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .landing-eyebrow,
@@ -210,9 +215,9 @@ a {
 }
 
 .landing-copy h1 {
-  margin: 0 0 18px;
-  font-size: clamp(2.3rem, 4.2vw, 3.7rem);
-  line-height: 1.05;
+  margin: 0 0 12px;
+  font-size: clamp(1.85rem, 3.2vw, 2.75rem);
+  line-height: 1.08;
   letter-spacing: -0.025em;
   background: linear-gradient(135deg, #1e293b 30%, #4f46e5);
   -webkit-background-clip: text;
@@ -224,9 +229,9 @@ a {
 .landing-lead {
   margin: 0;
   color: var(--muted);
-  font-size: 1.06rem;
-  line-height: 1.7;
-  max-width: 54ch;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 48ch;
 }
 
 .portal-cards {
@@ -305,8 +310,11 @@ a {
 }
 
 .landing-auth {
-  position: sticky;
-  top: 24px;
+  align-self: center;
+}
+
+.landing-footer {
+  display: none;
 }
 
 /* Auth card */
