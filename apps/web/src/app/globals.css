@@ -132,6 +132,52 @@ a {
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.45);
 }
 
+.landing-logo-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  padding: 9px 16px;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(8, 12, 30, 0.35);
+}
+
+.landing-logo-pill img {
+  display: block;
+  height: 32px;
+  width: auto;
+}
+
+.landing-brand-tag {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted-light);
+  letter-spacing: 0.01em;
+  padding-left: 4px;
+  border-left: 1px solid rgba(148, 163, 184, 0.3);
+  margin-left: 4px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.hero-video {
+  margin: 32px 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(99, 102, 241, 0.12), transparent 60%),
+    #ffffff;
+  box-shadow: var(--shadow-lg);
+}
+
+.hero-video video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+}
+
 .landing-badge {
   font-size: 0.74rem;
   letter-spacing: 0.12em;
@@ -273,6 +319,17 @@ a {
   display: grid;
   gap: 18px;
   border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+}
+
+.auth-brand img {
+  display: block;
+  height: 30px;
+  width: auto;
 }
 
 .auth-card-header h2 {
@@ -512,29 +569,30 @@ a {
 .dash-brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
 }
 
-.dash-brand-logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 0.85rem;
-  letter-spacing: -0.03em;
-  color: white;
-  background: linear-gradient(135deg, var(--brand-600), #06b6d4);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+.dash-brand-link {
+  display: inline-flex;
+  align-items: center;
 }
 
-.dash-brand a {
-  font-weight: 700;
-  font-size: 1.04rem;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  text-decoration: none;
+.dash-brand-link img {
+  display: block;
+  height: 28px;
+  width: auto;
+}
+
+.dash-brand-tag {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--brand-700);
+  background: var(--brand-50);
+  border: 1px solid var(--brand-100);
+  padding: 4px 9px;
+  border-radius: 999px;
 }
 
 .dash-links {

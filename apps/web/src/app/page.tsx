@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import AuthPanel from '../components/AuthPanel';
 
 const features = [
@@ -20,11 +21,16 @@ export default function HomePage() {
     <div className="landing">
       <header className="landing-nav">
         <div className="landing-brand">
-          <span className="landing-logo">AC</span>
-          <div>
-            <strong>Assetcues Support</strong>
-            <span>Customer Ticket Management</span>
-          </div>
+          <span className="landing-logo-pill">
+            <Image
+              src="/assetcues-logo.png"
+              alt="AssetCues"
+              width={146}
+              height={36}
+              priority
+            />
+          </span>
+          <span className="landing-brand-tag">Support Console</span>
         </div>
         <span className="landing-badge">Enterprise-grade support management</span>
       </header>
@@ -38,17 +44,10 @@ export default function HomePage() {
             alerts, and team collaboration.
           </p>
 
-          <div className="portal-cards">
-            <div className="portal-card portal-card-muted">
-              <p className="portal-label">Customer Portal</p>
-              <h3>Submit &amp; track support tickets</h3>
-              <span className="portal-note">Coming soon</span>
-            </div>
-            <div className="portal-card portal-card-active">
-              <p className="portal-label">Internal Portal</p>
-              <h3>Team management console</h3>
-              <span className="portal-note">Sign in to access dashboard</span>
-            </div>
+          <div className="hero-video">
+            <video autoPlay loop muted playsInline preload="auto" aria-hidden="true">
+              <source src="/ac-logo-animation.webm" type="video/webm" />
+            </video>
           </div>
 
           <div className="feature-grid">

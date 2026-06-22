@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthSession } from '../hooks/useAuthSession';
 
@@ -156,6 +157,9 @@ export default function AuthPanel() {
 
   return (
     <div className="auth-card">
+      <div className="auth-brand">
+        <Image src="/assetcues-logo.png" alt="AssetCues" width={130} height={32} priority />
+      </div>
       <div className="auth-card-header">
         <p className="auth-eyebrow">Internal Portal</p>
         <h2>

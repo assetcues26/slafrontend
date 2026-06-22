@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuthSession } from '../hooks/useAuthSession';
 
@@ -20,8 +21,10 @@ export default function DashboardNav() {
     <header className="dash-nav">
       <div className="dash-nav-inner">
         <div className="dash-brand">
-          <span className="dash-brand-logo" aria-hidden>AC</span>
-          <Link href="/">Assetcues Support</Link>
+          <Link href="/" className="dash-brand-link" aria-label="AssetCues home">
+            <Image src="/assetcues-logo.png" alt="AssetCues" width={122} height={30} priority />
+          </Link>
+          <span className="dash-brand-tag">SLA Console</span>
         </div>
         <nav className="dash-links">
           {links.map((link) => (
