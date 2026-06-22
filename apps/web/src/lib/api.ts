@@ -38,7 +38,10 @@ export type TicketListItem = {
   due_date_missing: boolean | null;
   jira_ticket_url: string | null;
   project: string | null;
+  reporter: string | null;
+  issue_type: string | null;
   updated: string | null;
+  created: string | null;
 };
 
 export type TicketListResponse = {
@@ -48,6 +51,37 @@ export type TicketListResponse = {
   offset: number;
 };
 
+export type TicketDetail = TicketListItem & {
+  description: string | null;
+  todo_start: string | null;
+  todo_end: string | null;
+  'todo_duration (min)': number | null;
+  todo_sla: string | null;
+  todo_sla_commented: string | null;
+  todo_sla_emailed: string | null;
+  inprogress_start: string | null;
+  inprogress_end: string | null;
+  'inprogress_duration (min)': number | null;
+  inprogress_sla: string | null;
+  inprogress_sla_commented: string | null;
+  inprogress_sla_emailed: string | null;
+  done_start: string | null;
+  'done_duration (min)': number | null;
+};
+
+export type StatusHistoryItem = {
+  history_id: string;
+  timestamp: string | null;
+  ticket_key: string;
+  old_status: string | null;
+  new_status: string | null;
+  updated_time: string | null;
+  assignee: string | null;
+  duration: number | null;
+};
+
+export type PhaseSla = { breached: number; total: number };
+
 export type DashboardStats = {
   totalTickets: number;
   activeBreaches: number;
@@ -55,4 +89,15 @@ export type DashboardStats = {
   avgStatusDuration: number;
   byTeam: Record<string, number>;
   byStatus: Record<string, number>;
+  byPriority: Record<string, number>;
+  byCategory: Record<string, number>;
+  byIssueType: Record<string, number>;
+  byProject: Record<string, number>;
+  slaByPhase: {
+    todo: PhaseSla;
+    inprogress: PhaseSla;
+    current: PhaseSla;
+  };
+  createdTrend: Array<{ day: string; count: number }>;
+  avgDurationByStatus: Array<{ status: string; avg: number }>;
 };

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { TicketListItem } from '../lib/api';
 
 const slaBadge = (ticket: TicketListItem) => {
@@ -53,9 +54,23 @@ export default function TicketTable({ tickets, loading }: Props) {
             return (
               <tr key={ticket.ticket_key} className={badge.className === 'badge-breach' ? 'row-breach' : ''}>
                 <td>
-                  <a href={ticket.jira_ticket_url || '#'} target="_blank" rel="noreferrer">
-                    {ticket.ticket_key}
-                  </a>
+                  <div className="key-cell">
+                    <Link href={`/dashboard/tickets/${ticket.ticket_key}`} className="key-link">
+                      {ticket.ticket_key}
+                    </Link>
+                    {ticket.jira_ticket_url ? (
+                      <a
+                        href={ticket.jira_ticket_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="key-external"
+                        title="Open in Jira"
+                        aria-label="Open in Jira"
+                      >
+                        ↗
+                      </a>
+                    ) : null}
+                  </div>
                 </td>
                 <td className="cell-summary">{ticket.summary}</td>
                 <td>{ticket.current_status}</td>

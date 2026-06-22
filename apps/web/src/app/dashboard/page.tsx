@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardNav from '../../components/DashboardNav';
 import TicketTable from '../../components/TicketTable';
+import { BarCard, DonutCard, TrendCard, PhaseSlaCard } from '../../components/Charts';
 import { useAuthSession } from '../../hooks/useAuthSession';
 import { fetchJson, type DashboardStats, type TicketListItem } from '../../lib/api';
 import { getAccessToken } from '../../lib/authToken';
@@ -62,7 +63,7 @@ export default function DashboardPage() {
       }
       return Promise.all([
         fetchJson<DashboardStats>('/stats', token),
-        fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=10', token),
+        fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=50', token),
       ]);
     })
       .then((result) => {
@@ -79,6 +80,8 @@ export default function DashboardPage() {
     return <div className="dash-page"><DashboardNav /><div className="table-empty">Loading…</div></div>;
   }
 
+  const alertTickets = breaches.slice(0, 5);
+
   return (
     <div className="dash-page">
       <DashboardNav />
@@ -87,7 +90,7 @@ export default function DashboardPage() {
           <div>
             <p className="eyebrow">Operations dashboard</p>
             <h1>SLA overview</h1>
-            <p className="lead">Live ticket data synced from Jira via n8n every 10 minutes.</p>
+            <p className="lead">Live ticket analytics synced from Jira via n8n every 10 minutes.</p>
           </div>
           <Link href="/dashboard/breaches" className="primary">
             View all breaches
@@ -140,16 +143,59 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {stats && Object.keys(stats.byTeam).length > 0 && (
-          <section className="dash-section">
-            <h2>Breaches by team</h2>
-            <div className="chip-row">
-              {Object.entries(stats.byTeam).map(([team, count]) => (
-                <span key={team} className="chip chip-breach">
-                  {team}: {count}
-                </span>
-              ))}
+        {alertTickets.length > 0 && (
+          <section className="alert-panel">
+            <div className="alert-panel-head">
+              <div className="alert-panel-title">
+                <span className="alert-panel-icon"><IconAlert /></span>
+                <div>
+                  <h2>SLA breach alerts</h2>
+                  <p>{breaches.length} ticket{breaches.length === 1 ? '' : 's'} need immediate attention</p>
+                </div>
+              </div>
+              <Link href="/dashboard/breaches" className="ghost">See all</Link>
             </div>
+            <ul className="alert-list">
+              {alertTickets.map((ticket) => {
+                const missing = ticket.due_date_missing;
+                return (
+                  <li key={ticket.ticket_key} className="alert-item">
+                    <span className={`alert-dot ${missing ? 'dot-warn' : 'dot-breach'}`} />
+                    <div className="alert-item-main">
+                      <Link href={`/dashboard/tickets/${ticket.ticket_key}`} className="alert-key">
+                        {ticket.ticket_key}
+                      </Link>
+                      <span className="alert-summary">{ticket.summary || 'No summary'}</span>
+                    </div>
+                    <span className="alert-meta">{ticket.current_status || '—'}</span>
+                    <span className="alert-meta">{ticket.status_team || '—'}</span>
+                    <span className={`badge ${missing ? 'badge-warn' : 'badge-breach'}`}>
+                      {missing
+                        ? 'Missing due date'
+                        : ticket.current_status_duration != null && ticket.current_status_sla_threshold != null
+                          ? `${ticket.current_status_duration}m / ${ticket.current_status_sla_threshold}m`
+                          : 'SLA breached'}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {stats && (
+          <section className="charts-grid">
+            <BarCard title="Tickets by status" subtitle="Current workflow distribution" record={stats.byStatus} color="#6366f1" span />
+            <DonutCard title="Breaches by team" subtitle="Where SLAs are slipping" record={stats.byTeam} />
+            <BarCard title="Tickets by priority" subtitle="Workload severity" record={stats.byPriority} color="#f59e0b" />
+            <PhaseSlaCard
+              title="SLA compliance by phase"
+              subtitle="On track vs breached per lifecycle stage"
+              phases={stats.slaByPhase}
+            />
+            <DonutCard title="Status category" subtitle="Main · Sub · Final" record={stats.byCategory} />
+            <DonutCard title="Issue type" subtitle="Ticket composition" record={stats.byIssueType} />
+            <TrendCard title="Tickets created over time" subtitle="Intake trend" data={stats.createdTrend} span />
           </section>
         )}
 
