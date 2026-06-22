@@ -8,6 +8,15 @@ const slaBadge = (ticket: TicketListItem) => {
   return { label: 'On track', className: 'badge-ok' };
 };
 
+const prioClass = (priority?: string | null) => {
+  const value = (priority || '').toLowerCase();
+  if (value.includes('highest') || value.includes('critical') || value.includes('blocker')) return 'prio prio-highest';
+  if (value.includes('high')) return 'prio prio-high';
+  if (value.includes('medium')) return 'prio prio-medium';
+  if (value.includes('low')) return 'prio prio-low';
+  return 'prio';
+};
+
 type Props = {
   tickets: TicketListItem[];
   loading?: boolean;
@@ -51,7 +60,7 @@ export default function TicketTable({ tickets, loading }: Props) {
                 <td className="cell-summary">{ticket.summary}</td>
                 <td>{ticket.current_status}</td>
                 <td>{ticket.status_team || '—'}</td>
-                <td>{ticket.priority}</td>
+                <td><span className={prioClass(ticket.priority)}>{ticket.priority || '—'}</span></td>
                 <td>
                   {ticket.current_status_duration != null
                     ? `${ticket.current_status_duration}m`
