@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import DashboardNav from '../../components/DashboardNav';
 import TicketTable from '../../components/TicketTable';
-import { BarCard, DonutCard, TrendCard, PhaseSlaCard } from '../../components/Charts';
+import { BarCard, DonutCard, TrendCard, PhaseSlaCard, PriorityBarCard } from '../../components/Charts';
 import { useAuthSession } from '../../hooks/useAuthSession';
 import { fetchJson, type DashboardStats, type TicketListItem } from '../../lib/api';
 import { getAccessToken } from '../../lib/authToken';
@@ -185,9 +185,9 @@ export default function DashboardPage() {
 
         {stats && (
           <section className="charts-grid">
-            <BarCard title="Tickets by status" subtitle="Current workflow distribution" record={stats.byStatus} color="#6366f1" span />
+            <BarCard title="Tickets by status" subtitle="Current workflow distribution" record={stats.byStatus} horizontal span />
             <DonutCard title="Breaches by team" subtitle="Where SLAs are slipping" record={stats.byTeam} />
-            <BarCard title="Tickets by priority" subtitle="Workload severity" record={stats.byPriority} color="#f59e0b" />
+            <PriorityBarCard title="Tickets by priority" subtitle="Sorted by severity" record={stats.byPriority} />
             <PhaseSlaCard
               title="SLA compliance by phase"
               subtitle="On track vs breached per lifecycle stage"
