@@ -22,17 +22,13 @@ export default function HomePage() {
 
       <main className="landing-main">
         <section className="landing-copy">
-          <div className="landing-hero">
-            <div className="landing-hero-text">
-              <p className="landing-eyebrow">Internal Portal</p>
-              <h1>Resolve issues faster with SLA-driven workflows</h1>
-            </div>
-            <div className="hero-video">
-              <video autoPlay loop muted playsInline preload="auto" aria-hidden="true">
-                <source src="/ac-logo-animation.webm" type="video/webm" />
-              </video>
-            </div>
+          <div className="hero-video">
+            <video autoPlay loop muted playsInline preload="auto" aria-hidden="true">
+              <source src="/ac-logo-animation.webm" type="video/webm" />
+            </video>
           </div>
+          <p className="landing-eyebrow">Internal Portal</p>
+          <h1>Resolve issues faster with SLA-driven workflows</h1>
           <p className="landing-lead">
             Track, triage, and resolve support tickets with built-in SLA monitoring and real-time
             alerts.
