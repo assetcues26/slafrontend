@@ -6,6 +6,7 @@ import DashboardNav from '../../../components/DashboardNav';
 import TicketTable from '../../../components/TicketTable';
 import { useAuthSession } from '../../../hooks/useAuthSession';
 import { fetchJson, type TicketListItem } from '../../../lib/api';
+import { getAccessToken } from '../../../lib/authToken';
 
 export default function BreachesPage() {
   const { session, loading: authLoading } = useAuthSession();
@@ -21,8 +22,16 @@ export default function BreachesPage() {
       return;
     }
 
-    fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=200', session.access_token)
-      .then((data) => setTickets(data.items))
+    getAccessToken().then((token) => {
+      if (!token) {
+        router.replace('/');
+        return;
+      }
+      return fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=200', token);
+    })
+      .then((data) => {
+        if (data) setTickets(data.items);
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [session, authLoading, router]);

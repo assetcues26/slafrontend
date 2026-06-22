@@ -6,6 +6,7 @@ import DashboardNav from '../../../components/DashboardNav';
 import TicketTable from '../../../components/TicketTable';
 import { useAuthSession } from '../../../hooks/useAuthSession';
 import { fetchJson, type TicketListItem, type TicketListResponse } from '../../../lib/api';
+import { getAccessToken } from '../../../lib/authToken';
 
 function TicketsContent() {
   const { session, loading: authLoading } = useAuthSession();
@@ -29,8 +30,16 @@ function TicketsContent() {
     if (search.trim()) query.set('search', search.trim());
 
     setLoading(true);
-    fetchJson<TicketListResponse>(`/tickets?${query}`, session.access_token)
-      .then(setData)
+    getAccessToken().then((token) => {
+      if (!token) {
+        router.replace('/');
+        return;
+      }
+      return fetchJson<TicketListResponse>(`/tickets?${query}`, token);
+    })
+      .then((result) => {
+        if (result) setData(result);
+      })
       .catch((err: Error) => setError(err.message))
       .finally(() => setLoading(false));
   }, [session, authLoading, router, slaFilter, search]);

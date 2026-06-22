@@ -7,6 +7,7 @@ import DashboardNav from '../../components/DashboardNav';
 import TicketTable from '../../components/TicketTable';
 import { useAuthSession } from '../../hooks/useAuthSession';
 import { fetchJson, type DashboardStats, type TicketListItem } from '../../lib/api';
+import { getAccessToken } from '../../lib/authToken';
 
 export default function DashboardPage() {
   const { session, loading: authLoading } = useAuthSession();
@@ -23,12 +24,19 @@ export default function DashboardPage() {
       return;
     }
 
-    const token = session.access_token;
-    Promise.all([
-      fetchJson<DashboardStats>('/stats', token),
-      fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=10', token),
-    ])
-      .then(([statsData, breachData]) => {
+    getAccessToken().then((token) => {
+      if (!token) {
+        router.replace('/');
+        return;
+      }
+      return Promise.all([
+        fetchJson<DashboardStats>('/stats', token),
+        fetchJson<{ items: TicketListItem[] }>('/tickets/breaches?limit=10', token),
+      ]);
+    })
+      .then((result) => {
+        if (!result) return;
+        const [statsData, breachData] = result;
         setStats(statsData);
         setBreaches(breachData.items);
       })
