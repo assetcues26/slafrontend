@@ -79,6 +79,6 @@ Use the same footer and replace the button text with “Sign in to Assetcues”.
 
 ## Notes
 
-- Google OAuth is **disabled** in the app; use username + password only.
-- New users are created by the **admin** in Supabase or via admin panel — public sign-up is off on the login page.
+- Google OAuth is **removed** from the app; sign up uses email + password only.
+- New users can register from the **Sign up** tab on the login page (email confirmation required).
 - After changing templates, send a test from **Authentication** → **Users** → invite or reset password.
