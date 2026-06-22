@@ -64,10 +64,11 @@ export function useAuthSession() {
     });
   };
 
-  const resendSignupOtp = async (email: string) => {
+  const resendSignupEmail = async (email: string) => {
     return supabase.auth.resend({
       type: 'signup',
       email,
+      options: { emailRedirectTo: redirectTo() },
     });
   };
 
@@ -82,7 +83,7 @@ export function useAuthSession() {
     signInWithPassword,
     signUp,
     verifySignupOtp,
-    resendSignupOtp,
+    resendSignupEmail,
     signOut,
   };
 }

@@ -5,7 +5,7 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthSession } from '../hooks/useAuthSession';
 
-type AuthMode = 'signin' | 'signup' | 'verify';
+type AuthMode = 'signin' | 'signup' | 'confirm';
 
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
@@ -18,11 +18,12 @@ export default function AuthPanel() {
     signInWithPassword,
     signUp,
     verifySignupOtp,
-    resendSignupOtp,
+    resendSignupEmail,
     signOut,
   } = useAuthSession();
 
   const [mode, setMode] = useState<AuthMode>('signin');
+  const [showOtp, setShowOtp] = useState(false);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -89,8 +90,11 @@ export default function AuthPanel() {
       return;
     }
 
-    setMode('verify');
-    setMessage('We sent a 6-digit verification code to your email. Enter it below to activate your account.');
+    setMode('confirm');
+    setShowOtp(false);
+    setMessage(
+      'Check your email and click the confirmation link. After confirming, return here and sign in with your password.',
+    );
   };
 
   const handleVerifyOtp = async (event: FormEvent) => {
@@ -114,16 +118,16 @@ export default function AuthPanel() {
     router.push('/dashboard');
   };
 
-  const handleResendOtp = async () => {
+  const handleResendEmail = async () => {
     resetMessages();
     setBusy(true);
-    const { error: resendError } = await resendSignupOtp(email.trim());
+    const { error: resendError } = await resendSignupEmail(email.trim());
     setBusy(false);
     if (resendError) {
       setError(resendError.message);
       return;
     }
-    setMessage('A new verification code was sent to your email.');
+    setMessage('Confirmation email sent again. Check your inbox.');
   };
 
   if (loading) {
@@ -155,20 +159,20 @@ export default function AuthPanel() {
       <div className="auth-card-header">
         <p className="auth-eyebrow">Internal Portal</p>
         <h2>
-          {mode === 'verify'
-            ? 'Verify your email'
+          {mode === 'confirm'
+            ? 'Confirm your email'
             : mode === 'signup'
               ? 'Create your account'
               : 'Welcome back'}
         </h2>
         <p className="auth-subtitle">
-          {mode === 'verify'
-            ? 'Enter the OTP sent to your inbox to complete registration.'
+          {mode === 'confirm'
+            ? 'Supabase sends a confirmation link by default. Click it, then sign in.'
             : 'Team management console for SLA-driven support workflows.'}
         </p>
       </div>
 
-      {mode !== 'verify' ? (
+      {mode !== 'confirm' ? (
         <div className="auth-tabs">
           <button
             type="button"
@@ -281,45 +285,61 @@ export default function AuthPanel() {
             />
           </label>
           <button className="auth-primary" type="submit" disabled={busy}>
-            {busy ? 'Creating account…' : 'Create account & send OTP'}
+            {busy ? 'Creating account…' : 'Create account'}
           </button>
         </form>
       ) : null}
 
-      {mode === 'verify' ? (
-        <form className="auth-form" onSubmit={handleVerifyOtp}>
-          <label className="auth-field">
-            <span>Email OTP</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="6-digit code"
-              value={otp}
-              onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              required
-            />
-          </label>
-          <button className="auth-primary" type="submit" disabled={busy}>
-            {busy ? 'Verifying…' : 'Verify & continue'}
+      {mode === 'confirm' ? (
+        <div className="auth-form">
+          <div className="auth-confirm-steps">
+            <p><strong>1.</strong> Open the email we sent to <strong>{email}</strong></p>
+            <p><strong>2.</strong> Click <strong>Confirm your mail</strong> (or the confirmation link)</p>
+            <p><strong>3.</strong> Come back here and sign in with your password</p>
+          </div>
+          <button
+            className="auth-primary"
+            type="button"
+            onClick={() => {
+              setMode('signin');
+              resetMessages();
+              setMessage('Email confirmed? Sign in with your password below.');
+            }}
+          >
+            I confirmed — sign in
           </button>
-          <button className="auth-link" type="button" onClick={handleResendOtp} disabled={busy}>
-            Resend code
+          <button className="auth-link" type="button" onClick={handleResendEmail} disabled={busy}>
+            Resend confirmation email
           </button>
           <button
             className="auth-link"
             type="button"
-            onClick={() => {
-              setMode('signup');
-              resetMessages();
-            }}
+            onClick={() => setShowOtp((value) => !value)}
           >
-            Back to sign up
+            {showOtp ? 'Hide OTP entry' : 'Got a 6-digit code instead?'}
           </button>
-        </form>
+          {showOtp ? (
+            <form onSubmit={handleVerifyOtp} className="auth-form">
+              <label className="auth-field">
+                <span>6-digit code (only if your email shows a code)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="123456"
+                  value={otp}
+                  onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                />
+              </label>
+              <button className="auth-secondary" type="submit" disabled={busy}>
+                Verify with code
+              </button>
+            </form>
+          ) : null}
+        </div>
       ) : null}
 
-      {mode !== 'verify' ? (
+      {mode !== 'confirm' ? (
         <>
           <div className="auth-divider">
             <span>or</span>
