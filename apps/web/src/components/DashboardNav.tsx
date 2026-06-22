@@ -4,8 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuthSession } from '../hooks/useAuthSession';
+import { useMe } from '../hooks/useMe';
 
-const links = [
+const baseLinks = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/tickets', label: 'All Tickets' },
   { href: '/dashboard/breaches', label: 'SLA Breaches' },
@@ -14,8 +15,12 @@ const links = [
 export default function DashboardNav() {
   const pathname = usePathname();
   const { session, loading, signOut } = useAuthSession();
+  const { isAdmin } = useMe();
   const email = session?.user.email ?? '';
   const initial = email ? email[0]?.toUpperCase() : '?';
+  const links = isAdmin
+    ? [...baseLinks, { href: '/dashboard/admin', label: 'Admin' }]
+    : baseLinks;
 
   return (
     <header className="dash-nav">

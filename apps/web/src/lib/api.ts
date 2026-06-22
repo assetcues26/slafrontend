@@ -80,6 +80,26 @@ export type StatusHistoryItem = {
   duration: number | null;
 };
 
+export type Me = {
+  id: string;
+  email: string | null;
+  role: string;
+  username: string | null;
+  fullName: string | null;
+};
+
+export type AdminUser = {
+  id: string;
+  email: string | null;
+  username: string | null;
+  fullName: string | null;
+  role: string;
+  createdAt: string | null;
+  lastSignInAt: string | null;
+  emailConfirmed: boolean;
+  banned: boolean;
+};
+
 export type PhaseSla = { breached: number; total: number };
 
 export type DashboardStats = {
