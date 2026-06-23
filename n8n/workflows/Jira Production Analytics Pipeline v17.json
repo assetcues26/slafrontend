@@ -1,0 +1,1003 @@
+{
+  "name": "Jira Production Analytics Pipeline v12",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "8586abc2-ed40-4593-b8bf-b640e4dd9920",
+      "name": "Schedule Trigger1",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -5568,
+        19040
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://swagatcompany1.atlassian.net/rest/api/3/search/jql",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "jql",
+              "value": "issuetype NOT IN (Subtask) ORDER BY updated DESC"
+            },
+            {
+              "name": "expand",
+              "value": "changelog"
+            },
+            {
+              "name": "maxResults",
+              "value": "100"
+            },
+            {
+              "name": "fields",
+              "value": "summary,assignee,priority,status,created,updated,reporter,issuetype,project,duedate,description"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "60044af5-d54a-4b50-9d6a-fd306f713a53",
+      "name": "Fetch Jira Issues1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        -5200,
+        19040
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "gOEmCvMZk3us2WGU",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "issues",
+        "options": {}
+      },
+      "id": "3672f843-6285-4581-89b9-b4f1adf84b1a",
+      "name": "Split Issues1",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -4992,
+        19040
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const formatDate = (isoStr) => {\r\n    if (!isoStr || typeof isoStr !== 'string' || !isoStr.includes('T')) return isoStr;\r\n    const [date, fullTime] = isoStr.split('T');\r\n    const time = fullTime.split('.')[0];\r\n    return `${date} ${time}`;\r\n};\r\n\r\nconst parseToUTC = (isoStr) => {\r\n    if (!isoStr) return null;\r\n    return new Date(isoStr).getTime();\r\n};\r\n\r\nconst parseJiraDescription = (desc) => {\r\n    if (desc == null || desc === '') return '';\r\n    if (typeof desc === 'string') {\r\n        const trimmed = desc.trim();\r\n        if (trimmed.startsWith('{') && trimmed.includes('\"type\"')) {\r\n            try { return parseJiraDescription(JSON.parse(trimmed)); } catch (e) { return trimmed; }\r\n        }\r\n        return trimmed;\r\n    }\r\n    if (typeof desc === 'object' && desc.type === 'doc' && Array.isArray(desc.content)) {\r\n        const parts = [];\r\n        const walk = (nodes) => {\r\n            if (!nodes) return;\r\n            for (const node of nodes) {\r\n                if (node.type === 'text' && node.text) parts.push(node.text);\r\n                if (node.type === 'hardBreak') parts.push('\\n');\r\n                if (node.content) walk(node.content);\r\n            }\r\n        };\r\n        walk(desc.content);\r\n        return parts.join('').trim();\r\n    }\r\n    return String(desc);\r\n};\r\n\r\n// Synced with packages/shared/src/sla_timing.json — single source of truth\r\nconst SLA_CONFIG = [\r\n    { main_status: 'Report', timings: {}, workflow: [\r\n        { team: 'Support', status: 'Triage Required with Product' },\r\n        { team: 'Product', status: 'Migrated to Prod' },\r\n        { team: 'Support', status: null }\r\n    ]},\r\n    { main_status: 'RCA Discovery', timings: { Highest: 45, High: 45, Medium: 60 }, workflow: [\r\n        { team: 'QA', status: 'Triage Required with Tech' },\r\n        { team: 'Tech', status: 'Backend Changes Ticket Created/Attached' },\r\n        { team: 'Support', status: null }\r\n    ]},\r\n    { main_status: 'Bug (Tech RCA)', timings: { Highest: 45, High: 45, Medium: 360 }, workflow: [\r\n        { team: 'Tech', status: 'In Progress' },\r\n        { team: 'Tech', status: 'No Action Required' },\r\n        { team: 'Support', status: null }\r\n    ]},\r\n    { main_status: 'Triaged', timings: { Highest: 20, High: 20, Medium: 60 }, workflow: [\r\n        { team: 'Product', status: 'QA Failed' },\r\n        { team: 'Tech', status: 'UAT Done with Customer' },\r\n        { team: 'Support', status: null }\r\n    ]},\r\n    { main_status: 'Sprint ticket available/created', timings: { Highest: 'Due Date', High: 'Due Date', Medium: 'Due Date' }, workflow: [\r\n        { team: 'QA/Tech', status: 'Clone Ticket Created' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: 'Fastrack ticket available/created', timings: { Highest: 'Due Date', High: 'Due Date', Medium: 'Due Date' }, workflow: [\r\n        { team: 'QA/Tech', status: 'Ready for Unit Test (HF)' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: 'HotFix Route', timings: { Highest: 'Due Date', High: 'Due Date', Medium: 'Due Date' }, workflow: [\r\n        { team: 'QA/Tech', status: 'Ready for Unit Test (PP)' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: 'Config Changes', timings: { Highest: 20, High: 20, Medium: 60 }, workflow: [\r\n        { team: 'Product', status: 'Ready for Unit Test (Prod)' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: 'Approved by CSM/Product', timings: { Highest: 20, High: 20, Medium: 60 }, workflow: [\r\n        { team: 'Product', status: 'Ready for QA (HF)' },\r\n        { team: 'QA', status: null }\r\n    ]},\r\n    { main_status: 'Changes Completed', timings: { Highest: 10, High: 10, Medium: 30 }, workflow: [\r\n        { team: 'QA', status: 'Ready for QA (PP)' },\r\n        { team: 'QA', status: null }\r\n    ]},\r\n    { main_status: 'Backend Changes Required', timings: { Highest: 15, High: 15, Medium: 30 }, workflow: [\r\n        { team: 'QA', status: 'Ready for QA (Prod)' },\r\n        { team: 'QA', status: null }\r\n    ]},\r\n    { main_status: null, timings: {}, workflow: [\r\n        { team: null, status: 'QA Done (HF)' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: null, timings: {}, workflow: [\r\n        { team: null, status: 'QA Done (PP)' },\r\n        { team: 'Tech', status: null }\r\n    ]},\r\n    { main_status: null, timings: {}, workflow: [\r\n        { team: null, status: 'QA Done (Prod)' },\r\n        { team: 'Support', status: null }\r\n    ]}\r\n];\r\n\r\nconst normalizeTimingToMinutes = (value) => {\r\n    if (value == null) return null;\r\n    if (typeof value === 'number') return Math.round(value);\r\n    if (typeof value === 'string') {\r\n        const trimmed = value.trim();\r\n        const lower = trimmed.toLowerCase();\r\n        if (lower === 'due date') return null;\r\n        const hrsMatch = lower.match(/^(\\d+(?:\\.\\d+)?)\\s*hrs?$/);\r\n        if (hrsMatch) return Math.round(parseFloat(hrsMatch[1]) * 60);\r\n        const minMatch = lower.match(/^(\\d+(?:\\.\\d+)?)\\s*min(?:s)?$/);\r\n        if (minMatch) return Math.round(parseFloat(minMatch[1]));\r\n        const asNumber = Number(trimmed);\r\n        if (!Number.isNaN(asNumber)) return Math.round(asNumber);\r\n    }\r\n    return null;\r\n};\r\n\r\nconst parseTiming = (value) => {\r\n    if (value == null) return { kind: 'none', minutes: null };\r\n    if (typeof value === 'string' && value.trim().toLowerCase() === 'due date') {\r\n        return { kind: 'due_date', minutes: null };\r\n    }\r\n    return { kind: 'minutes', minutes: normalizeTimingToMinutes(value) };\r\n};\r\n\r\nconst buildStatusMaps = (config) => {\r\n    const main = new Map();\r\n    const sub = new Map();\r\n    const final = new Map();\r\n    for (const row of config) {\r\n        const workflow = Array.isArray(row.workflow) ? row.workflow : [];\r\n        const mainStatus = row.main_status || null;\r\n        const timings = row.timings || {};\r\n        const mainTeam = workflow[0]?.team ?? null;\r\n        const subStatus = workflow[0]?.status ?? null;\r\n        const subTeam = workflow[1]?.team ?? null;\r\n        const finalStatus = workflow[1]?.status ?? null;\r\n        const finalTeam = workflow[2]?.team ?? null;\r\n        if (mainStatus) main.set(mainStatus, { team: mainTeam, timings, mainStatus });\r\n        if (subStatus) sub.set(subStatus, { team: subTeam, timings, mainStatus });\r\n        if (finalStatus) final.set(finalStatus, { team: finalTeam, timings, mainStatus });\r\n    }\r\n    return { main, sub, final };\r\n};\r\n\r\nconst statusMaps = buildStatusMaps(SLA_CONFIG);\r\n\r\nconst getStatusMeta = (status) => {\r\n    if (statusMaps.main.has(status)) return { ...statusMaps.main.get(status), category: 'Main' };\r\n    if (statusMaps.sub.has(status)) return { ...statusMaps.sub.get(status), category: 'Sub' };\r\n    if (statusMaps.final.has(status)) return { ...statusMaps.final.get(status), category: 'Final' };\r\n    return { team: null, timings: null, mainStatus: null, category: 'Unknown' };\r\n};\r\n\r\nconst getTimingForPriority = (timings, priorityName) => {\r\n    if (!timings) return null;\r\n    const keys = Object.keys(timings);\r\n    if (!keys.length) return null;\r\n    if (priorityName) {\r\n        const match = keys.find((k) => k.toLowerCase() === priorityName.toLowerCase());\r\n        if (match) return timings[match];\r\n    }\r\n    return timings.Highest ?? timings.High ?? timings.Medium ?? null;\r\n};\r\n\r\nconst getDueDateEndUtc = (dateStr) => {\r\n    if (!dateStr || typeof dateStr !== 'string') return null;\r\n    const parts = dateStr.split('-').map((v) => Number(v));\r\n    if (parts.length !== 3 || parts.some((v) => Number.isNaN(v))) return null;\r\n    const [year, month, day] = parts;\r\n    return Date.UTC(year, month - 1, day, 23, 59, 59);\r\n};\r\n\r\nconst issue = $json;\r\nconst JIRA_BASE_URL = \"https://swagatcompany1.atlassian.net\";\r\nconst jira_ticket_url = `${JIRA_BASE_URL}/browse/${issue.key}`;\r\nconst staticData = $getWorkflowStaticData('global');\r\nif ($itemIndex === 0) staticData.slaAlertKeys = new Set();\r\n\r\nconst flagIsYes = (v) => {\r\n    const s = String(v ?? '').trim().toUpperCase();\r\n    return s === 'YES' || s === 'TRUE' || v === true;\r\n};\r\n\r\nconst changelog = issue.changelog || { histories: [] };\r\nconst created = issue.fields.created;\r\nlet transitions = [];\r\nfor (const history of changelog.histories) {\r\n    for (const item of history.items) {\r\n        if (item.field === 'status') {\r\n            transitions.push({ to: item.toString, from: item.fromString, timestamp: history.created });\r\n        }\r\n    }\r\n}\r\ntransitions.sort((a, b) => parseToUTC(a.timestamp) - parseToUTC(b.timestamp));\r\n\r\nconst currentStatus = issue.fields.status?.name || '';\r\nlet lifecycle = {\r\n    todo_start: null, todo_end: null, todo_duration: null,\r\n    inprogress_start: null, inprogress_end: null, inprogress_duration: null,\r\n    done_start: null, done_duration: null, was_regression: false\r\n};\r\n\r\nfor (const t of transitions) {\r\n    if (t.from === 'In Progress' && t.to === 'To Do') lifecycle.was_regression = true;\r\n    if (t.from === 'Done' && t.to === 'In Progress') {\r\n        lifecycle.inprogress_start = t.timestamp;\r\n        lifecycle.inprogress_end = null;\r\n        lifecycle.done_start = null;\r\n    }\r\n    if (t.to === 'To Do') {\r\n        lifecycle.todo_start = t.timestamp;\r\n        lifecycle.todo_end = null;\r\n        lifecycle.inprogress_start = null;\r\n        lifecycle.inprogress_end = null;\r\n        lifecycle.done_start = null;\r\n    }\r\n    if (t.to === 'In Progress' && t.from !== 'Done') {\r\n        lifecycle.inprogress_start = t.timestamp;\r\n        lifecycle.inprogress_end = null;\r\n        lifecycle.done_start = null;\r\n        if (lifecycle.todo_start && !lifecycle.todo_end) lifecycle.todo_end = t.timestamp;\r\n    }\r\n    if (t.to === 'Done') {\r\n        lifecycle.done_start = t.timestamp;\r\n        if (lifecycle.inprogress_start && !lifecycle.inprogress_end) lifecycle.inprogress_end = t.timestamp;\r\n        if (lifecycle.todo_start && !lifecycle.todo_end) lifecycle.todo_end = t.timestamp;\r\n    }\r\n}\r\n\r\nconst calcRunningDur = (start, end) => {\r\n    if (!start) return null;\r\n    const startTime = parseToUTC(start);\r\n    const endTime = end ? parseToUTC(end) : Date.now();\r\n    return Math.max(0, Math.round((endTime - startTime) / 60000));\r\n};\r\n\r\nlifecycle.todo_duration = calcRunningDur(lifecycle.todo_start, lifecycle.todo_end);\r\nlifecycle.inprogress_duration = calcRunningDur(lifecycle.inprogress_start, lifecycle.inprogress_end);\r\n\r\nif (!lifecycle.todo_start && currentStatus === 'To Do') lifecycle.todo_start = created;\r\nif (!lifecycle.inprogress_start && currentStatus === 'In Progress') lifecycle.inprogress_start = created;\r\nif (!lifecycle.done_start && currentStatus === 'Done') lifecycle.done_start = created;\r\nlifecycle.done_duration = calcRunningDur(lifecycle.done_start, null);\r\n\r\nlet current_status_start = null;\r\nfor (const t of transitions) {\r\n    if (t.to === currentStatus) current_status_start = t.timestamp;\r\n}\r\nif (!current_status_start) current_status_start = created;\r\n\r\nconst current_status_duration = calcRunningDur(current_status_start, null);\r\nconst statusMeta = getStatusMeta(currentStatus);\r\nconst status_team = statusMeta.team || null;\r\nconst status_category = statusMeta.category || 'Unknown';\r\nconst timingValue = getTimingForPriority(statusMeta.timings || {}, issue.fields.priority?.name || null);\r\nconst timing = parseTiming(timingValue);\r\n\r\nlet current_status_sla_threshold = null;\r\nlet current_status_sla = 'NO';\r\nlet due_date_missing = false;\r\nconst jiraDueDate = issue.fields.duedate || null;\r\n\r\nif (timing.kind === 'minutes' && timing.minutes != null) {\r\n    current_status_sla_threshold = timing.minutes;\r\n    current_status_sla = (current_status_duration != null && current_status_duration > timing.minutes) ? 'YES' : 'NO';\r\n} else if (timing.kind === 'due_date') {\r\n    if (!jiraDueDate) {\r\n        due_date_missing = true;\r\n        current_status_sla = 'YES';\r\n        current_status_sla_threshold = null;\r\n    } else {\r\n        const dueDateMs = getDueDateEndUtc(jiraDueDate);\r\n        if (dueDateMs) {\r\n            const startMs = parseToUTC(current_status_start);\r\n            if (startMs) current_status_sla_threshold = Math.max(0, Math.round((dueDateMs - startMs) / 60000));\r\n            current_status_sla = Date.now() > dueDateMs ? 'YES' : 'NO';\r\n        }\r\n    }\r\n}\r\n\r\n// Informational lifecycle SLAs (no alerts — status-based SLA drives alerts)\r\nconst todo_sla = (currentStatus === 'To Do' && lifecycle.todo_duration > 480) ? 'YES' : 'NO';\r\nconst inprogress_sla = (currentStatus === 'In Progress' && lifecycle.inprogress_duration > 480) ? 'YES' : 'NO';\r\n\r\nconst sheetData = $(\"Read Live Ticket1\").all();\r\nconst sheetMap = new Map(sheetData.map(item => [String(item.json.ticket_key), item.json]));\r\nconst prevData = sheetMap.get(issue.key) || {};\r\n\r\nlet todo_sla_commented = prevData.todo_sla_commented || 'NO';\r\nlet inprogress_sla_commented = prevData.inprogress_sla_commented || 'NO';\r\nlet todo_sla_emailed = prevData.todo_sla_emailed || 'NO';\r\nlet inprogress_sla_emailed = prevData.inprogress_sla_emailed || 'NO';\r\n\r\n// Reset alert flags when status changes or SLA clears\r\nconst prevStatus = prevData.current_status || '';\r\nif (prevStatus && prevStatus !== currentStatus) {\r\n    todo_sla_commented = 'NO';\r\n    inprogress_sla_commented = 'NO';\r\n    todo_sla_emailed = 'NO';\r\n    inprogress_sla_emailed = 'NO';\r\n}\r\nif (current_status_sla === 'NO') {\r\n    todo_sla_commented = 'NO';\r\n    inprogress_sla_commented = 'NO';\r\n    todo_sla_emailed = 'NO';\r\n    inprogress_sla_emailed = 'NO';\r\n}\r\n\r\nlet jira_comment = null;\r\nlet email_subject = null;\r\nlet email_body = null;\r\n\r\nconst buildSlaEmailBody = (breachReason, currentDuration, threshold) => {\r\n    const divider = '====================================================';\r\n    return [\r\n        'SLA BREACH ALERT', '', divider, '', 'TICKET DETAILS', '',\r\n        `Ticket Key:      ${issue.key}`,\r\n        `Summary:         ${issue.fields.summary}`,\r\n        `Current Status:  ${issue.fields.status.name}`,\r\n        `Assignee:        ${issue.fields.assignee?.displayName || 'Unassigned'}`,\r\n        `Priority:        ${issue.fields.priority?.name || 'None'}`,\r\n        `Project:         ${issue.fields.project.name}`,\r\n        `Reporter:        ${issue.fields.reporter?.displayName || 'Unknown'}`,\r\n        `Created Time:    ${formatDate(issue.fields.created)}`,\r\n        `Last Updated:    ${formatDate(issue.fields.updated)}`,\r\n        `Due Date:        ${jiraDueDate || 'No Due Date'}`,\r\n        '', divider, '', 'SLA DETAILS', '',\r\n        `Breached SLA Type:      ${breachReason}`,\r\n        `Status Team:            ${status_team || 'Unknown'}`,\r\n        `Status Category:        ${status_category}`,\r\n        `Time in Status:         ${currentDuration ?? 'N/A'} minutes`,\r\n        `Allowed Threshold:      ${threshold != null ? threshold + ' minutes' : (due_date_missing ? 'Due date required' : 'Due date')}`,\r\n        '', divider, '', 'DIRECT JIRA LINK', '', `Open Ticket: ${jira_ticket_url}`,\r\n        '', divider, '', 'ACTION REQUIRED', '',\r\n        due_date_missing\r\n            ? 'This ticket requires a due date in Jira. Please set one immediately.'\r\n            : 'Immediate attention is required. Please review ownership, blockers, and prioritization.',\r\n    ].join('\\n');\r\n};\r\n\r\nif (current_status_sla === 'YES') {\r\n    const breachReason = due_date_missing\r\n        ? 'MISSING DUE DATE'\r\n        : `STATUS SLA (${currentStatus})`;\r\n    if (!flagIsYes(todo_sla_commented)) {\r\n        jira_comment = due_date_missing\r\n            ? '⚠️ SLA breach: Due date is missing for this status.\\n\\nPlease set a due date in Jira immediately.'\r\n            : `⚠️ SLA breached in status \"${currentStatus}\".\\n\\nTime in status: ${current_status_duration} min (threshold: ${current_status_sla_threshold ?? 'due date'} min).\\nPlease review and take necessary action.`;\r\n        todo_sla_commented = 'YES';\r\n    }\r\n    if (!flagIsYes(todo_sla_emailed)) {\r\n        email_subject = due_date_missing\r\n            ? `[SLA BREACH][MISSING DUE DATE] ${issue.key}`\r\n            : `[SLA BREACH][${currentStatus}] ${issue.key}`;\r\n        email_body = buildSlaEmailBody(breachReason, current_status_duration, current_status_sla_threshold);\r\n        todo_sla_emailed = 'YES';\r\n    }\r\n}\r\n\r\nlet shouldSendSlaAlert = Boolean(jira_comment || email_body);\r\nif (shouldSendSlaAlert) {\r\n    const alertKey = String(issue.key);\r\n    if (staticData.slaAlertKeys.has(alertKey)) {\r\n        shouldSendSlaAlert = false;\r\n        jira_comment = null;\r\n        email_subject = null;\r\n        email_body = null;\r\n    } else {\r\n        staticData.slaAlertKeys.add(alertKey);\r\n    }\r\n}\r\n\r\nconsole.log(JSON.stringify({\r\n    timestamp: new Date().toISOString(),\r\n    event: 'TICKET_EVAL',\r\n    key: issue.key,\r\n    status: currentStatus,\r\n    current_status_sla,\r\n    current_status_duration,\r\n    current_status_sla_threshold,\r\n    due_date_missing,\r\n    status_category,\r\n}));\r\n\r\nreturn {\r\n    ticket_key: issue.key,\r\n    summary: issue.fields.summary,\r\n    assignee: issue.fields.assignee?.displayName || 'Unassigned',\r\n    priority: issue.fields.priority?.name || 'None',\r\n    todo_start: formatDate(lifecycle.todo_start),\r\n    todo_end: formatDate(lifecycle.todo_end),\r\n    'todo_duration (min)': lifecycle.todo_duration,\r\n    todo_sla,\r\n    todo_sla_commented,\r\n    todo_sla_emailed,\r\n    inprogress_start: formatDate(lifecycle.inprogress_start),\r\n    inprogress_end: formatDate(lifecycle.inprogress_end),\r\n    'inprogress_duration (min)': lifecycle.inprogress_duration,\r\n    inprogress_sla,\r\n    inprogress_sla_commented,\r\n    inprogress_sla_emailed,\r\n    done_start: formatDate(lifecycle.done_start),\r\n    'done_duration (min)': lifecycle.done_duration,\r\n    jira_comment,\r\n    email_subject,\r\n    email_body,\r\n    current_status: currentStatus,\r\n    current_status_start: formatDate(current_status_start),\r\n    current_status_duration,\r\n    current_status_sla,\r\n    current_status_sla_threshold,\r\n    status_team,\r\n    status_category,\r\n    created: formatDate(issue.fields.created),\r\n    updated: formatDate(issue.fields.updated),\r\n    reporter: issue.fields.reporter?.displayName || 'Unknown',\r\n    issue_type: issue.fields.issuetype.name,\r\n    project: issue.fields.project.name,\r\n    due_date: jiraDueDate || 'No Due Date',\r\n    due_date_missing,\r\n    description: parseJiraDescription(issue.fields.description),\r\n    jira_ticket_url,\r\n};\r\n"
+      },
+      "id": "528233a5-6e38-4188-a080-40cbbb46fa83",
+      "name": "Format Live Ticket1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4624,
+        18704
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1O-18nxcXuO1S0Hy37RnZhTwxFUtQo-94B_RrZ31hTWg",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Live Ticket",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ticket_key": "={{$json.ticket_key}}",
+            "summary": "={{$json.summary}}",
+            "assignee": "={{$json.assignee}}",
+            "priority": "={{$json.priority}}",
+            "todo_start": "={{$json.todo_start}}",
+            "todo_end": "={{$json.todo_end}}",
+            "todo_duration (min)": "={{$json[\"todo_duration (min)\"]}}",
+            "todo_sla": "={{$json.todo_sla}}",
+            "todo_sla_commented": "={{$json.todo_sla_commented}}",
+            "todo_sla_emailed": "={{$json.todo_sla_emailed}}",
+            "inprogress_start": "={{$json.inprogress_start}}",
+            "inprogress_end": "={{$json.inprogress_end}}",
+            "inprogress_duration (min)": "={{$json[\"inprogress_duration (min)\"]}}",
+            "inprogress_sla": "={{$json.inprogress_sla}}",
+            "inprogress_sla_commented": "={{$json.inprogress_sla_commented}}",
+            "inprogress_sla_emailed": "={{$json.inprogress_sla_emailed}}",
+            "done_start": "={{$json.done_start}}",
+            "done_duration (min)": "={{$json[\"done_duration (min)\"]}}",
+            "current_status": "={{$json.current_status}}",
+            "created": "={{$json.created}}",
+            "updated": "={{$json.updated}}",
+            "reporter": "={{$json.reporter}}",
+            "issue_type": "={{$json.issue_type}}",
+            "project": "={{$json.project}}",
+            "due_date": "={{$json.due_date}}",
+            "description": "={{$json.description}}",
+            "jira_ticket_url": "={{$json.jira_ticket_url}}",
+            "current_status_start": "={{$json.current_status_start}}",
+            "current_status_duration": "={{$json.current_status_duration}}",
+            "current_status_sla": "={{$json.current_status_sla}}",
+            "current_status_sla_threshold": "={{$json.current_status_sla_threshold}}",
+            "status_team": "={{$json.status_team}}",
+            "status_category": "={{$json.status_category}}"
+          },
+          "matchingColumns": [
+            "ticket_key"
+          ],
+          "schema": [
+            {
+              "id": "ticket_key",
+              "displayName": "ticket_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assignee",
+              "displayName": "assignee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "priority",
+              "displayName": "priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_start",
+              "displayName": "todo_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_end",
+              "displayName": "todo_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_duration (min)",
+              "displayName": "todo_duration (min)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_sla",
+              "displayName": "todo_sla",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_sla_commented",
+              "displayName": "todo_sla_commented",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "todo_sla_emailed",
+              "displayName": "todo_sla_emailed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_start",
+              "displayName": "inprogress_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_end",
+              "displayName": "inprogress_end",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_duration (min)",
+              "displayName": "inprogress_duration (min)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_sla",
+              "displayName": "inprogress_sla",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_sla_commented",
+              "displayName": "inprogress_sla_commented",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "inprogress_sla_emailed",
+              "displayName": "inprogress_sla_emailed",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done_start",
+              "displayName": "done_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "done_duration (min)",
+              "displayName": "done_duration (min)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_status",
+              "displayName": "current_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created",
+              "displayName": "created",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated",
+              "displayName": "updated",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reporter",
+              "displayName": "reporter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "issue_type",
+              "displayName": "issue_type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "project",
+              "displayName": "project",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "due_date",
+              "displayName": "due_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "jira_ticket_url",
+              "displayName": "jira_ticket_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_status_start",
+              "displayName": "current_status_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_status_duration",
+              "displayName": "current_status_duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_status_sla",
+              "displayName": "current_status_sla",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "current_status_sla_threshold",
+              "displayName": "current_status_sla_threshold",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status_team",
+              "displayName": "status_team",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status_category",
+              "displayName": "status_category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9f6a3d74-42d8-498d-997d-296ec4c3596f",
+      "name": "Sync Live Ticket1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4000,
+        18512
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5zyqfId00jxfcTNC",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1O-18nxcXuO1S0Hy37RnZhTwxFUtQo-94B_RrZ31hTWg",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Status History",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "ticket_key": "={{ $json.ticket_key }}",
+            "old_status": "={{ $json.old_status }}",
+            "new_status": "={{ $json.new_status }}",
+            "updated_time": "={{ $json.updated_time }}",
+            "assignee": "={{ $json.assignee }}",
+            "duration": "={{ $json.duration }}",
+            "history_id": "={{ $json.history_id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticket_key",
+              "displayName": "ticket_key",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "old_status",
+              "displayName": "old_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "new_status",
+              "displayName": "new_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "updated_time",
+              "displayName": "updated_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assignee",
+              "displayName": "assignee",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "duration",
+              "displayName": "duration",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "history_id",
+              "displayName": "history_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5f8e5d75-0f97-427d-94c1-5869d481443d",
+      "name": "Append History Row1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4032,
+        19328
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5zyqfId00jxfcTNC",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1O-18nxcXuO1S0Hy37RnZhTwxFUtQo-94B_RrZ31hTWg",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Status History",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "3949533f-4da2-48f6-a04c-36495ada5b89",
+      "name": "Read Existing History IDs1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4560,
+        19328
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5zyqfId00jxfcTNC",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const formatDate = (isoStr) => {\n    if (!isoStr || typeof isoStr !== 'string' || !isoStr.includes('T')) return isoStr;\n    const [date, fullTime] = isoStr.split('T');\n    const time = fullTime.split('.')[0];\n    return `${date} ${time}`;\n};\n\nconst parseToUTC = (isoStr) => {\n    if (!isoStr) return null;\n    return new Date(isoStr).getTime();\n};\n\nconst newTransitions = [];\n\n// 1. Get all existing IDs and clean them (remove whitespace)\nconst existingRows = $('Read Existing History IDs1').all();\nconst existingIds = new Set(\n    existingRows.map(r => String(r.json.history_id || \"\").trim()).filter(id => id !== \"\")\n);\n\n// 2. Local tracker to prevent duplicates WITHIN this single run\nconst seenInThisRun = new Set();\n\n// 3. Process tickets\nconst allIssues = $('Split Issues1').all();\n\nfor (const item of allIssues) {\n    const issue = item.json;\n    const ticketKey = issue.key;\n    const createdDate = issue.fields.created;\n    const changelog = issue.changelog || { histories: [] };\n\n    let transitions = [];\n    for (const history of changelog.histories) {\n        for (const hItem of history.items) {\n            if (hItem.field === 'status') {\n                transitions.push({\n                    from: hItem.fromString,\n                    to: hItem.toString,\n                    timestamp: history.created,\n                    user: history.author?.displayName || \"Jira System\"\n                });\n            }\n        }\n    }\n\n    transitions.sort((a, b) => parseToUTC(a.timestamp) - parseToUTC(b.timestamp));\n\n    let lastTime = createdDate;\n    let lastStatus = (transitions.length > 0) ? transitions[0].from : null;\n\n    for (const t of transitions) {\n        const diff = Math.max(0, Math.round((parseToUTC(t.timestamp) - parseToUTC(lastTime)) / 60000));\n        \n        // Clean the generated ID to match the sheet exactly\n        const historyId = `${ticketKey}_${t.timestamp}`.trim();\n        \n        // CHECK 1: Is it already in the Google Sheet?\n        // CHECK 2: Have we already processed it in this run?\n        if (!existingIds.has(historyId) && !seenInThisRun.has(historyId)) {\n            seenInThisRun.add(historyId);\n            \n            // Phase 7 Logging Diagnostics for Observability\n            console.log(JSON.stringify({\n                timestamp: new Date().toISOString(),\n                event: \"NEW_TRANSITION_DETECTED\",\n                key: ticketKey,\n                from: lastStatus,\n                to: t.to,\n                duration: diff\n            }));\n\n            newTransitions.push({\n                json: {\n                    timestamp: formatDate(new Date().toISOString()),\n                    ticket_key: ticketKey,\n                    old_status: lastStatus,\n                    new_status: t.to,\n                    updated_time: formatDate(t.timestamp),\n                    assignee: t.user,\n                    duration: diff,\n                    history_id: historyId\n                }\n            });\n        }\n        \n        lastTime = t.timestamp;\n        lastStatus = t.to;\n    }\n}\n\nreturn newTransitions;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4240,
+        19328
+      ],
+      "id": "98eeb91b-17ae-479c-9af4-b7c3af9c3d0b",
+      "name": "Process New Transitions1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1O-18nxcXuO1S0Hy37RnZhTwxFUtQo-94B_RrZ31hTWg",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Live Ticket",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "c6cb35e8-e37f-42a0-8dfd-a89f0cf5741e",
+      "name": "Read Live Ticket1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -5376,
+        19040
+      ],
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "5zyqfId00jxfcTNC",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.jira_comment}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "a08bd05d-261e-4a61-8324-aa242ac7c97c",
+      "name": "Filter Comments1",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        -3680,
+        18576
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "issueComment",
+        "issueKey": "={{ $json.ticket_key }}",
+        "comment": "={{ $json.jira_comment }}",
+        "options": {}
+      },
+      "id": "562e7cdc-7cc5-440e-a625-cd0effe0fe99",
+      "name": "Jira Add Comment1",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        18576
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "gOEmCvMZk3us2WGU",
+          "name": "Jira SW Cloud account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.email_body}}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "625f149d-0a45-49b4-9cd6-d59ce0324c3e",
+      "name": "Filter Emails1",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [
+        -3664,
+        19040
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "assetcues26@gmail.com",
+        "subject": "={{$json.email_subject}}",
+        "emailType": "text",
+        "message": "={{$json.email_body}}",
+        "options": {}
+      },
+      "id": "b92038c5-6e76-4f5d-a3ad-e3188c154f1e",
+      "name": "Send Breach Email1",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        -3296,
+        19040
+      ],
+      "webhookId": "d032a3e2-aba2-46b8-b018-bb269018edaa",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MTeVTLxVXyWz6F0o",
+          "name": "Gmail OAuth2 API"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sync Live Ticket1 only outputs sheet columns; restore full Format items for SLA actions.\n// Runs after sheet write so todo_sla_commented / todo_sla_emailed are persisted first.\nconst formatItems = $('Format Live Ticket1').all();\n\nreturn formatItems.filter((item) => {\n  const j = item.json;\n  const hasComment = j.jira_comment != null && String(j.jira_comment).trim() !== '';\n  const hasEmail = j.email_body != null && String(j.email_body).trim() !== '';\n  return hasComment || hasEmail;\n});\n"
+      },
+      "id": "6f13a331-2e68-409b-a038-52b9e44e86ec",
+      "name": "Route SLA Alerts1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4000,
+        18784
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO tickets (\n  ticket_key, summary, assignee, priority,\n  todo_start, todo_end, \"todo_duration (min)\",\n  todo_sla, todo_sla_commented, todo_sla_emailed,\n  inprogress_start, inprogress_end, \"inprogress_duration (min)\",\n  inprogress_sla, inprogress_sla_commented, inprogress_sla_emailed,\n  done_start, \"done_duration (min)\",\n  current_status, current_status_start, current_status_duration,\n  current_status_sla, current_status_sla_threshold, status_team, status_category,\n  created, updated,\n  reporter, issue_type, project, due_date, due_date_missing, description, jira_ticket_url,\n  updated_at_db\n) VALUES (\n  $1, $2, $3, $4,\n  $5, $6, $7,\n  $8, $9, $10,\n  $11, $12, $13,\n  $14, $15, $16,\n  $17, $18,\n  $19, $20, $21,\n  $22, $23, $24, $25,\n  $26, $27,\n  $28, $29, $30, $31, $32, $33,\n  NOW()\n)\nON CONFLICT (ticket_key) DO UPDATE SET\n  summary = EXCLUDED.summary,\n  assignee = EXCLUDED.assignee,\n  priority = EXCLUDED.priority,\n  todo_start = EXCLUDED.todo_start,\n  todo_end = EXCLUDED.todo_end,\n  \"todo_duration (min)\" = EXCLUDED.\"todo_duration (min)\",\n  todo_sla = EXCLUDED.todo_sla,\n  todo_sla_commented = EXCLUDED.todo_sla_commented,\n  todo_sla_emailed = EXCLUDED.todo_sla_emailed,\n  inprogress_start = EXCLUDED.inprogress_start,\n  inprogress_end = EXCLUDED.inprogress_end,\n  \"inprogress_duration (min)\" = EXCLUDED.\"inprogress_duration (min)\",\n  inprogress_sla = EXCLUDED.inprogress_sla,\n  inprogress_sla_commented = EXCLUDED.inprogress_sla_commented,\n  inprogress_sla_emailed = EXCLUDED.inprogress_sla_emailed,\n  done_start = EXCLUDED.done_start,\n  \"done_duration (min)\" = EXCLUDED.\"done_duration (min)\",\n  current_status = EXCLUDED.current_status,\n  current_status_start = EXCLUDED.current_status_start,\n  current_status_duration = EXCLUDED.current_status_duration,\n  current_status_sla = EXCLUDED.current_status_sla,\n  current_status_sla_threshold = EXCLUDED.current_status_sla_threshold,\n  status_team = EXCLUDED.status_team,\n  status_category = EXCLUDED.status_category,\n  created = EXCLUDED.created,\n  updated = EXCLUDED.updated,\n  reporter = EXCLUDED.reporter,\n  issue_type = EXCLUDED.issue_type,\n  project = EXCLUDED.project,\n  due_date = EXCLUDED.due_date,\n  due_date_missing = EXCLUDED.due_date_missing,\n  description = EXCLUDED.description,\n  jira_ticket_url = EXCLUDED.jira_ticket_url,\n  updated_at_db = NOW();",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.ticket_key,\n  $json.summary,\n  $json.assignee,\n  $json.priority,\n  $json.todo_start,\n  $json.todo_end,\n  $json['todo_duration (min)'],\n  $json.todo_sla,\n  $json.todo_sla_commented,\n  $json.todo_sla_emailed,\n  $json.inprogress_start,\n  $json.inprogress_end,\n  $json['inprogress_duration (min)'],\n  $json.inprogress_sla,\n  $json.inprogress_sla_commented,\n  $json.inprogress_sla_emailed,\n  $json.done_start,\n  $json['done_duration (min)'],\n  $json.current_status,\n  $json.current_status_start,\n  $json.current_status_duration,\n  $json.current_status_sla,\n  $json.current_status_sla_threshold,\n  $json.status_team,\n  $json.status_category,\n  $json.created,\n  $json.updated,\n  $json.reporter,\n  $json.issue_type,\n  $json.project,\n  $json.due_date,\n  $json.description,\n  $json.jira_ticket_url\n] }}"
+        }
+      },
+      "id": "7fd45787-5df8-4981-a7ea-6be9fbceabdc",
+      "name": "Upsert Ticket PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -4288,
+        18784
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "0BjUwrITXQSc5McN",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prevent duplicate Google Sheet rows: one output item per ticket_key per run.\nconst formatItems = $('Format Live Ticket1').all();\nconst byKey = new Map();\nfor (const item of formatItems) {\n  const key = String(item.json.ticket_key || '').trim();\n  if (key) {\n    byKey.set(key, item);\n  }\n}\nreturn Array.from(byKey.values());\n"
+      },
+      "id": "18bf573e-1d3b-4a08-a676-b8ebcfcfb250",
+      "name": "Dedupe Tickets For Sheet1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4304,
+        18512
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO status_history (\n  timestamp, ticket_key, old_status, new_status,\n  updated_time, assignee, duration, history_id\n) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\nON CONFLICT (history_id) DO NOTHING;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.timestamp,\n  $json.ticket_key,\n  $json.old_status,\n  $json.new_status,\n  $json.updated_time,\n  $json.assignee,\n  $json.duration,\n  $json.history_id\n] }}"
+        }
+      },
+      "id": "bc5ac67e-8ef4-497b-baf9-19b895a2430f",
+      "name": "Insert History PostgreSQL1",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -4032,
+        19136
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "0BjUwrITXQSc5McN",
+          "name": "Postgres account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Read Live Ticket1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Jira Issues1": {
+      "main": [
+        [
+          {
+            "node": "Split Issues1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Issues1": {
+      "main": [
+        [
+          {
+            "node": "Format Live Ticket1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Existing History IDs1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Live Ticket1": {
+      "main": [
+        [
+          {
+            "node": "Dedupe Tickets For Sheet1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Upsert Ticket PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Live Ticket1": {
+      "main": [
+        [
+          {
+            "node": "Route SLA Alerts1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route SLA Alerts1": {
+      "main": [
+        [
+          {
+            "node": "Filter Comments1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Emails1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Existing History IDs1": {
+      "main": [
+        [
+          {
+            "node": "Process New Transitions1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process New Transitions1": {
+      "main": [
+        [
+          {
+            "node": "Append History Row1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insert History PostgreSQL1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Live Ticket1": {
+      "main": [
+        [
+          {
+            "node": "Fetch Jira Issues1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Comments1": {
+      "main": [
+        [
+          {
+            "node": "Jira Add Comment1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Emails1": {
+      "main": [
+        [
+          {
+            "node": "Send Breach Email1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedupe Tickets For Sheet1": {
+      "main": [
+        [
+          {
+            "node": "Sync Live Ticket1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Ticket PostgreSQL": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "cf061092-3852-4fe4-a06e-3e74e9c41ea2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e374457340de8aac8299f505048c1123b4c436f57a02bfd7cae84c0c5f569492"
+  },
+  "id": "IDjhYHh2VP3pmZSh",
+  "tags": []
+}

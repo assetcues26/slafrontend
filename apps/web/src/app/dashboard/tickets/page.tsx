@@ -11,6 +11,31 @@ import { getAccessToken } from '../../../lib/authToken';
 const uniqueSorted = (values: Array<string | null | undefined>) =>
   Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim())))).sort();
 
+type DateField = 'due' | 'created' | 'updated';
+
+const normalizeDueDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.toLowerCase() === 'missing' || trimmed.toLowerCase() === 'no due date') {
+    return null;
+  }
+  return trimmed.slice(0, 10);
+};
+
+const ticketDateValue = (ticket: TicketListItem, field: DateField) => {
+  if (field === 'due') return normalizeDueDate(ticket.due_date);
+  const raw = field === 'created' ? ticket.created : ticket.updated;
+  return raw ? String(raw).slice(0, 10) : null;
+};
+
+const inDateRange = (value: string | null, from: string, to: string) => {
+  if (!from && !to) return true;
+  if (!value) return false;
+  if (from && value < from) return false;
+  if (to && value > to) return false;
+  return true;
+};
+
 function exportCsv(items: TicketListItem[]) {
   const headers = [
     'Key', 'Summary', 'Status', 'Team', 'Category', 'Priority', 'Issue Type', 'Assignee',
@@ -55,16 +80,9 @@ function TicketsContent() {
   const [team, setTeam] = useState('');
   const [priority, setPriority] = useState('');
   const [missingOnly, setMissingOnly] = useState(false);
-  const [dueDateFilter, setDueDateFilter] = useState('');
-
-  const normalizeDueDate = (value: string | null | undefined) => {
-    if (!value) return null;
-    const trimmed = value.trim();
-    if (!trimmed || trimmed.toLowerCase() === 'missing' || trimmed.toLowerCase() === 'no due date') {
-      return null;
-    }
-    return trimmed.slice(0, 10);
-  };
+  const [dateField, setDateField] = useState<DateField>('due');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -106,14 +124,14 @@ function TicketsContent() {
       if (team && t.status_team !== team) return false;
       if (priority && t.priority !== priority) return false;
       if (missingOnly && !t.due_date_missing) return false;
-      if (dueDateFilter && normalizeDueDate(t.due_date) !== dueDateFilter) return false;
+      if (!inDateRange(ticketDateValue(t, dateField), dateFrom, dateTo)) return false;
       if (q) {
         const hay = `${t.ticket_key} ${t.summary ?? ''} ${t.assignee ?? ''} ${t.reporter ?? ''}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [items, search, slaFilter, status, team, priority, missingOnly, dueDateFilter]);
+  }, [items, search, slaFilter, status, team, priority, missingOnly, dateField, dateFrom, dateTo]);
 
   return (
     <main className="dash-main">
@@ -161,22 +179,45 @@ function TicketsContent() {
             </option>
           ))}
         </select>
-        <div className="filter-date-wrap">
+        <div className="filter-date-range">
+          <select
+            value={dateField}
+            onChange={(e) => setDateField(e.target.value as DateField)}
+            aria-label="Date field"
+            title="Date field"
+          >
+            <option value="due">Due date</option>
+            <option value="created">Created</option>
+            <option value="updated">Updated</option>
+          </select>
           <input
             type="date"
             className="filter-date"
-            value={dueDateFilter}
-            onChange={(e) => setDueDateFilter(e.target.value)}
-            aria-label="Filter by due date"
-            title="Filter by due date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            aria-label="From date"
+            title="From date"
           />
-          {dueDateFilter ? (
+          <span className="filter-date-sep">to</span>
+          <input
+            type="date"
+            className="filter-date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            aria-label="To date"
+            title="To date"
+            min={dateFrom || undefined}
+          />
+          {dateFrom || dateTo ? (
             <button
               type="button"
-              className="filter-date-clear"
-              onClick={() => setDueDateFilter('')}
-              aria-label="Clear due date filter"
-              title="Clear date"
+              className="filter-date-clear filter-date-clear-inline"
+              onClick={() => {
+                setDateFrom('');
+                setDateTo('');
+              }}
+              aria-label="Clear date range"
+              title="Clear date range"
             >
               ×
             </button>

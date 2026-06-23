@@ -963,6 +963,35 @@ a {
   flex: 0 1 170px;
 }
 
+.filter-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-date-range select {
+  flex: 0 1 130px;
+  min-width: 120px;
+  padding: 11px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.filter-date-sep {
+  font-size: 0.82rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.filter-date-clear-inline {
+  position: static;
+  flex-shrink: 0;
+}
+
 .filter-date {
   flex: 1 1 170px;
   min-width: 150px;
@@ -1735,6 +1764,10 @@ a {
 }
 
 .filter-date {
+  height: 42px;
+}
+
+.filter-date-range select {
   height: 42px;
 }
 
